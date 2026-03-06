@@ -453,17 +453,18 @@
     font-size: 32px; color: #fff; margin-bottom: 24px;
     position: relative;
   }
-  .dev-avatar::after {
-    content: '';
-    position: absolute; inset: -3px;
-    border-radius: 50%;
-    border: 2px solid var(--p1);
-    animation: ringPulse 2s ease infinite;
-  .dev-avatar img{
+.dev-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.dev-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
+  display: block;
 }
   }
   @keyframes ringPulse {
