@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreetHorizon – Speed Without Limits</title>
+<meta name="description" content="StreetHorizon is a high-octane street car racing game built in Unreal Engine. Pre-register now on Google Play.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --p1: #6367FF;
+    --p2: #8494FF;
+    --p3: #C9BEEF;
+    --p4: #FFDBFD;
+    --dark: #08080f;
+    --dark2: #0e0e1c;
+    --dark3: #13131f;
+    --text: #e8e8f8;
+    --muted: #9090b0;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--p1);
+    position: fixed; top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s ease;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--p2);
+    position: fixed; top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9998;
+    transition: transform 0.18s ease, border-color 0.3s;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--dark2); }
+  ::-webkit-scrollbar-thumb { background: var(--p1); border-radius: 2px; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 1000;
+    padding: 20px 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8,8,15,0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(99,103,255,0.12);
+    transition: padding 0.3s;
+  }
+  nav.scrolled { padding: 14px 60px; }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 4px;
+    background: linear-gradient(90deg, var(--p1), var(--p4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+  .nav-links a {
+    color: var(--p3);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    position: relative;
+    transition: color 0.3s;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute; bottom: -4px; left: 0;
+    width: 0; height: 1.5px;
+    background: var(--p1);
+    transition: width 0.3s;
+  }
+  .nav-links a:hover { color: #fff; }
+  .nav-links a:hover::after { width: 100%; }
+
+  .nav-cta {
+    background: var(--p1);
+    color: #fff !important;
+    padding: 9px 22px;
+    border-radius: 2px;
+    font-size: 13px !important;
+    letter-spacing: 2px;
+    transition: background 0.3s, box-shadow 0.3s !important;
+  }
+  .nav-cta:hover { background: var(--p2) !important; box-shadow: 0 0 24px rgba(99,103,255,0.5); }
+  .nav-cta::after { display: none !important; }
+
+  .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+  .hamburger span { width: 24px; height: 2px; background: var(--p3); transition: 0.3s; }
+
+  /* HERO */
+  #home {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    position: relative; overflow: hidden;
+    padding-top: 80px;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 60% 40%, rgba(99,103,255,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 20% 80%, rgba(132,148,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 80% 10%, rgba(255,219,253,0.08) 0%, transparent 60%);
+  }
+
+  /* Speed lines */
+  .speed-lines {
+    position: absolute; inset: 0; overflow: hidden; opacity: 0.06;
+  }
+  .speed-lines::before, .speed-lines::after {
+    content: '';
+    position: absolute; top: 0;
+    width: 1px; height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--p1), transparent);
+    animation: speedline 2.5s linear infinite;
+  }
+  .speed-lines::before { left: 20%; animation-delay: 0s; }
+  .speed-lines::after { left: 75%; animation-delay: 1.2s; }
+
+  @keyframes speedline {
+    0% { transform: translateY(-100%) scaleY(0.5); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(100%) scaleY(2); opacity: 0; }
+  }
+
+  /* Road grid */
+  .road-grid {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 50%;
+    background-image:
+      linear-gradient(rgba(99,103,255,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,103,255,0.08) 1px, transparent 1px);
+    background-size: 80px 80px;
+    perspective: 400px;
+    transform: perspective(600px) rotateX(55deg) translateX(-50%);
+    transform-origin: bottom center;
+    opacity: 0.6;
+    animation: roadMove 3s linear infinite;
+  }
+  @keyframes roadMove {
+    from { background-position: 0 0; }
+    to { background-position: 0 80px; }
+  }
+
+  .hero-content {
+    position: relative; z-index: 2;
+    padding: 0 60px;
+    max-width: 800px;
+  }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(99,103,255,0.12);
+    border: 1px solid rgba(99,103,255,0.3);
+    padding: 6px 16px; border-radius: 2px;
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--p2); margin-bottom: 28px;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-tag span { width: 6px; height: 6px; border-radius: 50%; background: var(--p1); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 12vw, 140px);
+    line-height: 0.9;
+    letter-spacing: 6px;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+  .hero-title .stroke {
+    -webkit-text-stroke: 2px var(--p1);
+    color: transparent;
+    display: block;
+  }
+  .hero-title .fill {
+    background: linear-gradient(90deg, #fff, var(--p3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+  }
+
+  .hero-sub {
+    font-size: 18px; color: var(--muted);
+    margin-top: 24px; max-width: 480px;
+    line-height: 1.6; font-weight: 400;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+
+  .hero-badges {
+    display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap;
+    animation: fadeUp 0.8s 0.5s ease both;
+  }
+  .badge {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--p3); font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .badge-icon { font-size: 16px; }
+
+  .hero-btns {
+    display: flex; gap: 16px; margin-top: 40px; flex-wrap: wrap;
+    animation: fadeUp 0.8s 0.6s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--p1);
+    color: #fff; padding: 16px 32px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    text-decoration: none; border: none;
+    cursor: pointer; position: relative; overflow: hidden;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .btn-primary:hover { background: var(--p2); box-shadow: 0 0 30px rgba(99,103,255,0.5); }
+
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: transparent;
+    color: var(--p3); padding: 15px 32px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    text-decoration: none; border: 1px solid rgba(132,148,255,0.4);
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: border-color 0.3s, color 0.3s, background 0.3s;
+  }
+  .btn-outline:hover { border-color: var(--p1); color: #fff; background: rgba(99,103,255,0.1); }
+
+  .hero-right {
+    position: absolute; right: -40px; top: 50%;
+    transform: translateY(-50%);
+    width: 55%;
+    animation: carFloat 4s ease-in-out infinite;
+    z-index: 1;
+    opacity: 0.9;
+  }
+  @keyframes carFloat {
+    0%,100% { transform: translateY(-50%) translateX(0); }
+    50% { transform: translateY(calc(-50% - 18px)) translateX(-8px); }
+  }
+
+  /* SVG car placeholder with neon glow */
+  .car-visual {
+    width: 100%;
+    filter: drop-shadow(0 0 40px rgba(99,103,255,0.5)) drop-shadow(0 0 80px rgba(132,148,255,0.2));
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(30px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  /* SECTION BASE */
+  section { padding: 120px 60px; position: relative; }
+  .section-tag {
+    display: inline-block;
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--p1); margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 6vw, 72px);
+    letter-spacing: 3px;
+    line-height: 1;
+  }
+  .section-line {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, var(--p1), transparent);
+    margin: 20px 0 48px;
+  }
+
+  /* ABOUT */
+  #about { background: var(--dark2); }
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+    align-items: center; margin-top: 60px;
+  }
+  .about-text p {
+    font-size: 17px; color: var(--muted); line-height: 1.8;
+    margin-bottom: 20px; font-weight: 400;
+  }
+  .about-features {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    margin-top: 40px;
+  }
+  .feature-card {
+    background: rgba(99,103,255,0.06);
+    border: 1px solid rgba(99,103,255,0.15);
+    padding: 24px; position: relative; overflow: hidden;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--p1);
+  }
+  .feature-card:hover { border-color: rgba(99,103,255,0.4); background: rgba(99,103,255,0.1); }
+  .feature-card h4 {
+    font-size: 16px; font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 8px; color: var(--p3);
+  }
+  .feature-card p { font-size: 14px; color: var(--muted); font-weight: 400; line-height: 1.5; }
+
+  .about-visual {
+    position: relative;
+  }
+  .engine-badge {
+    background: rgba(8,8,15,0.9);
+    border: 1px solid rgba(99,103,255,0.3);
+    padding: 32px;
+    text-align: center;
+    position: relative;
+  }
+  .engine-badge::before {
+    content: '';
+    position: absolute; inset: -1px;
+    background: linear-gradient(135deg, var(--p1), transparent, var(--p4));
+    z-index: -1; border-radius: 0;
+    opacity: 0.4;
+  }
+  .engine-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px; letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--p1), var(--p4));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .engine-sub { font-size: 12px; letter-spacing: 3px; color: var(--muted); margin-top: 8px; }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1px; background: rgba(99,103,255,0.1);
+    margin-top: 24px;
+  }
+  .stat {
+    background: var(--dark2);
+    padding: 24px; text-align: center;
+  }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px; letter-spacing: 2px;
+    color: var(--p1);
+  }
+  .stat-label { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* PREREGISTER */
+  #preregister {
+    background: var(--dark);
+    text-align: center;
+    overflow: hidden;
+  }
+  .prereg-glow {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(99,103,255,0.15), transparent 70%);
+    pointer-events: none;
+  }
+  .prereg-content { position: relative; z-index: 2; }
+  .prereg-content .section-title { color: #fff; }
+  .prereg-content p {
+    font-size: 18px; color: var(--muted);
+    max-width: 500px; margin: 0 auto 40px;
+    line-height: 1.6; font-weight: 400;
+  }
+
+  .gplay-btn {
+    display: inline-flex; align-items: center; gap: 16px;
+    background: #fff; color: #111;
+    padding: 16px 32px; text-decoration: none;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px; font-weight: 700;
+    letter-spacing: 1px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 0 0 0 rgba(99,103,255,0.5);
+  }
+  .gplay-btn:hover { transform: translateY(-3px); box-shadow: 0 20px 60px rgba(99,103,255,0.4); }
+  .gplay-icon { font-size: 28px; }
+  .gplay-inner small { display: block; font-size: 11px; font-weight: 400; color: #666; letter-spacing: 1px; }
+  .gplay-inner big { display: block; font-size: 20px; color: #000; }
+
+  .prereg-note {
+    margin-top: 20px; font-size: 13px; color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .countdown {
+    display: flex; gap: 24px; justify-content: center;
+    margin: 48px 0;
+  }
+  .count-box {
+    text-align: center;
+    background: rgba(99,103,255,0.08);
+    border: 1px solid rgba(99,103,255,0.2);
+    padding: 20px 28px;
+    min-width: 80px;
+  }
+  .count-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px; color: var(--p1);
+    display: block; line-height: 1;
+  }
+  .count-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+
+  /* DEVELOPER */
+  #developer { background: var(--dark2); }
+  .dev-grid {
+    display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px;
+    align-items: start; margin-top: 60px;
+  }
+  .dev-card {
+    background: rgba(99,103,255,0.06);
+    border: 1px solid rgba(99,103,255,0.15);
+    padding: 40px; position: relative;
+  }
+  .dev-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--p1), var(--p4));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px; color: #fff; margin-bottom: 24px;
+    position: relative;
+  }
+  .dev-avatar::after {
+    content: '';
+    position: absolute; inset: -3px;
+    border-radius: 50%;
+    border: 2px solid var(--p1);
+    animation: ringPulse 2s ease infinite;
+  }
+  @keyframes ringPulse {
+    0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.1)}
+  }
+
+  .dev-name { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; }
+  .dev-role { font-size: 13px; color: var(--p1); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+  .dev-bio { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 400; }
+
+  .dev-socials { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+  .social-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px;
+    border: 1px solid rgba(99,103,255,0.25);
+    color: var(--p3); text-decoration: none;
+    font-size: 13px; font-weight: 600; letter-spacing: 1px;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+  }
+  .social-link:hover { background: rgba(99,103,255,0.15); border-color: var(--p1); color: #fff; }
+
+  .dev-tech {
+    background: rgba(8,8,15,0.6);
+    border: 1px solid rgba(99,103,255,0.12);
+    padding: 40px;
+  }
+  .dev-tech h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 2px; margin-bottom: 28px;
+    color: var(--p3);
+  }
+  .tech-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(99,103,255,0.08);
+    font-size: 15px; font-weight: 500;
+  }
+  .tech-item:last-child { border-bottom: none; }
+  .tech-label { color: var(--muted); }
+  .tech-value { color: var(--p2); font-weight: 700; }
+  .tech-bar {
+    width: 100%; height: 3px;
+    background: rgba(99,103,255,0.1);
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .tech-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--p1), var(--p4));
+    width: 0;
+    transition: width 1s ease;
+  }
+
+  /* SUPPORT */
+  #support { background: var(--dark); }
+  .support-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 24px; margin-top: 60px;
+  }
+  .support-card {
+    background: rgba(99,103,255,0.05);
+    border: 1px solid rgba(99,103,255,0.12);
+    padding: 36px 28px;
+    transition: border-color 0.3s, transform 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .support-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--p1), var(--p4));
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .support-card:hover { border-color: rgba(99,103,255,0.3); transform: translateY(-4px); }
+  .support-card:hover::after { transform: scaleX(1); }
+  .support-icon { font-size: 36px; margin-bottom: 20px; display: block; }
+  .support-card h3 { font-size: 20px; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; }
+  .support-card p { font-size: 15px; color: var(--muted); line-height: 1.6; font-weight: 400; }
+  .support-card a {
+    display: inline-block; margin-top: 16px;
+    font-size: 13px; color: var(--p1);
+    text-decoration: none; letter-spacing: 1px; font-weight: 600;
+    transition: color 0.3s;
+  }
+  .support-card a:hover { color: var(--p4); }
+
+  /* PRIVACY & TERMS */
+  .legal-section { background: var(--dark2); }
+  .legal-section + .legal-section { background: var(--dark); }
+  .legal-content {
+    max-width: 800px;
+    margin-top: 48px;
+  }
+  .legal-content h3 {
+    font-size: 18px; font-weight: 700;
+    color: var(--p2); letter-spacing: 1px;
+    margin-top: 36px; margin-bottom: 12px;
+  }
+  .legal-content h3:first-child { margin-top: 0; }
+  .legal-content p {
+    font-size: 15px; color: var(--muted);
+    line-height: 1.8; font-weight: 400;
+    margin-bottom: 12px;
+  }
+  .legal-content ul {
+    list-style: none; margin: 12px 0 20px 20px;
+  }
+  .legal-content ul li {
+    font-size: 15px; color: var(--muted);
+    padding: 4px 0; font-weight: 400;
+    position: relative; padding-left: 16px;
+  }
+  .legal-content ul li::before {
+    content: '▸';
+    position: absolute; left: 0; color: var(--p1); font-size: 12px;
+  }
+  .legal-updated {
+    font-size: 12px; color: rgba(144,144,176,0.6);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--dark);
+    border-top: 1px solid rgba(99,103,255,0.12);
+    padding: 60px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr;
+    gap: 60px; margin-bottom: 48px;
+  }
+  .footer-brand .nav-logo { font-size: 32px; display: block; margin-bottom: 16px; }
+  .footer-brand p { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 280px; font-weight: 400; }
+  .footer-col h4 {
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--p1); margin-bottom: 20px; font-weight: 600;
+  }
+  .footer-col ul { list-style: none; }
+  .footer-col ul li { margin-bottom: 10px; }
+  .footer-col ul li a {
+    color: var(--muted); text-decoration: none;
+    font-size: 15px; font-weight: 400;
+    transition: color 0.3s;
+  }
+  .footer-col ul li a:hover { color: var(--p3); }
+  .footer-bottom {
+    border-top: 1px solid rgba(99,103,255,0.08);
+    padding-top: 28px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-bottom p { font-size: 13px; color: rgba(144,144,176,0.5); }
+
+  /* MOBILE NAV */
+  .mobile-menu {
+    display: none;
+    position: fixed; inset: 0; top: 72px;
+    background: rgba(8,8,15,0.98);
+    backdrop-filter: blur(20px);
+    z-index: 999;
+    flex-direction: column;
+    padding: 40px 60px;
+    gap: 28px;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a {
+    color: var(--p3); text-decoration: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; letter-spacing: 4px;
+    transition: color 0.3s;
+  }
+  .mobile-menu a:hover { color: var(--p1); }
+
+  /* Glitch effect on hover for title */
+  .glitch-hover:hover {
+    animation: glitch 0.3s linear;
+  }
+  @keyframes glitch {
+    0%{clip-path:inset(0 0 95% 0);transform:translate(-2px)}
+    20%{clip-path:inset(30% 0 50% 0);transform:translate(2px)}
+    40%{clip-path:inset(70% 0 10% 0);transform:translate(-1px)}
+    60%{clip-path:inset(50% 0 30% 0);transform:translate(1px)}
+    80%{clip-path:inset(10% 0 70% 0);transform:translate(0)}
+    100%{clip-path:inset(0);transform:translate(0)}
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0; transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* Neon separator */
+  .neon-sep {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--p1), var(--p4), transparent);
+    opacity: 0.3;
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 18px 24px; }
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    section { padding: 80px 24px; }
+    .hero-content { padding: 0 24px; }
+    .hero-right { display: none; }
+    .about-grid, .dev-grid { grid-template-columns: 1fr; gap: 40px; }
+    .support-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+    footer { padding: 40px 24px; }
+    .about-features { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(3,1fr); }
+    .mobile-menu { padding: 40px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo">StreetHorizon</div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#preregister">Pre-Register</a></li>
+    <li><a href="#developer">Developer</a></li>
+    <li><a href="#support">Support</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#preregister" class="nav-cta">Pre-Register Now</a></li>
+  </ul>
+  <div class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#home" onclick="closeMobile()">Home</a>
+  <a href="#about" onclick="closeMobile()">About</a>
+  <a href="#preregister" onclick="closeMobile()">Pre-Register</a>
+  <a href="#developer" onclick="closeMobile()">Developer</a>
+  <a href="#support" onclick="closeMobile()">Support</a>
+  <a href="#privacy" onclick="closeMobile()">Privacy</a>
+  <a href="#terms" onclick="closeMobile()">Terms</a>
+</div>
+
+<!-- HOME / HERO -->
+<section id="home">
+  <div class="hero-bg"></div>
+  <div class="speed-lines"></div>
+  <div class="road-grid"></div>
+
+  <div class="hero-content">
+    <div class="hero-tag">
+      <span></span> Now Available for Pre-Registration
+    </div>
+    <h1 class="hero-title glitch-hover">
+      <span class="stroke">Street</span>
+      <span class="fill">Horizon</span>
+    </h1>
+    <p class="hero-sub">
+      Feel the asphalt beneath your wheels. Race through neon-drenched city streets in the most immersive mobile racing experience ever built.
+    </p>
+    <div class="hero-badges">
+      <div class="badge"><span class="badge-icon"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 640 640">
+	<rect width="640" height="640" fill="none" />
+	<path fill="#fdfdfd" d="M320 576c141.4 0 256-114.6 256-256S461.4 64 320 64S64 178.6 64 320s114.6 256 256 256m65.5-113.7L360.4 434L318 476.6c-24.1-.3-47.9-6.2-69.3-17.2s-40.1-26.9-54.5-46.3c4.5 1.4 9.2 2.3 13.9 2.6c6.9.1 14.5-2.4 14.5-14.1V286.5c.1-3-.5-5.9-1.7-8.6s-3.1-5-5.4-6.9s-5-3.1-7.9-3.7s-5.9-.5-8.8.2c-19.6 4.5-35.3 53.5-35.3 53.5c-.2-22.6 4.5-45 13.8-65.6s23-39 40.1-53.8c22.5-19.5 50.1-32.2 79.6-36.7c-21.4 12.2-33.5 32.1-33.5 48.9c0 26.9 16.2 23.6 21 19.7v155.3c.8 1.9 1.9 3.8 3.2 5.5c2.1 3 5 5.4 8.2 7s6.9 2.5 10.5 2.5c16.2 0 37.3-18.5 37.3-18.5V259.6c0-12.8-9.6-28.2-19.3-33.5c0 0 17.9-3.2 31.7 7.4c2.6-3.2 5.3-6.2 8.2-9.1c32.2-31.6 62.5-40.6 87.7-45.1c0 0-45.9 36.1-45.9 84.5c0 36 .9 123.8.9 123.8c17 16.4 42.4-7.3 65.2-30.8c-4.4 21.3-24 75.9-86.6 105.4z" />
+</svg></span> Unreal Engine 5</div>
+      <div class="badge"><span class="badge-icon"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+	<rect width="64" height="64" fill="none" />
+	<path fill="#be1e2d" d="m48.21 15.662l-1.252-.106l-5.229 2.219s2.391.344 2.488.392c.099.05 2.593-1.498 2.874-1.563c.275-.066 1.119-.942 1.119-.942" />
+	<path fill="#c1bfc0" d="m60.16 16.626l-11.95-.964l-4.82 2.508l5.87 1.754l5.732 1.353l4.328-3.699z" />
+	<path fill="#e0d9db" d="m53.46 20l-10.658-2.323l.628 4.312l7.342 3l2.298.459l.99-2.582z" />
+	<path fill="#cc293d" d="m55.16 20.289l7.395-3.361s-2.896 3.03-2.642 7.274L55.16 25.81z" />
+	<path fill="#be1e2d" d="M53.07 19.924v5.411l2.09.475l.802-1.112l-.185-3.897l.185-.498l-1.279-.379z" />
+	<path fill="#737475" d="M56.04 25.449c-.146-.155-7.818-2.069-7.818-2.069l-2.712 2.444l2.394 3.186l1.57 2.606l3.089-.628l2.461-2.559z" />
+	<path fill="#243438" d="m53.46 34.07l-13.33 6.406l.05-2.805l1.652-1.274l3.678-.873l3.398-1.688l3.462-1.756l3.32-.9z" />
+	<path fill="#be1e2d" d="m46.859 20.72l1.736.939v2.491l-2.916 2.01l-3.694.3l-2.01-1.47l2.058-3.575l4.559-1.062z" />
+	<path fill="#cc293d" d="M34.469 18.726s9.385-3.089 13.234 1.021l-3.686.868l-4.604.801z" />
+	<path fill="#d3314c" d="M39.861 19.403s2.775-2.314 7.842.344v1.317l-7.842 3.926z" />
+	<path fill="#be1e2d" d="m34.469 18.726l5.971.404v5.803l-5.971-1.413z" />
+	<path fill="#243438" d="m40.13 38.15l3.644-1.564v.84l9.686-4.957v-2.944l-3.38 1.303l-4.523 2.332l-3.247.592l-1.87.488zM28 23.712l6.919-1.473l9.702 3.336l-2.092 2.02l-6.219.545s-5.515.033-5.848-.757c-.33-.789-2.909-.798-2.975-1.231c-.071-.435.513-2.44.513-2.44" />
+	<path fill="#939598" d="m40.992 29.3l-7.387.225L21.2 35.878v3.482l9.477 2.01l8.757-7.04z" />
+	<path fill="#bf3413" d="M6.562 43.23s3.319 3.182 9.07 2.381l-.165-.257v-1.943l-.714.058l-5.994-1.641H6.834z" />
+	<path fill="#2e4044" d="M2.509 35.878s-1.115-5.271 3.774-7.738c0 0 .881-.581 3.069-.208c0 0 5.515.918 5.515 2.323c0 1.401-.719 1.774-.719 1.774l-4.097 2.932l-2.543 1.437H5.524l-3.02-.52" />
+	<path fill="#243438" d="M7.631 35.878s.649-5.387 3.723-6.365c0 0 2.563-1.024 4 1.397c1.445 2.421-3.308 3.214-3.308 3.214l-4.42 1.754" />
+	<path fill="#cc293d" d="m.244 37.83l4.292-1.952l8.672.618l.214 3.864l-5.185 3.7l-7.638-2.548z" />
+	<path fill="#d0c9cc" d="M7.105 42.06L.599 40.27l.124 1.1l6.327 1.99z" />
+	<path fill="#cc293d" d="M23.263 24.07s3.384-1.411 8.447-.186c0 0-3.336.406-3.756 1.11l-.754.587s-1.856-.739-1.955-.764c-.094-.026-1.982-.747-1.982-.747" />
+	<path fill="#be1e2d" d="m23.263 24.07l.165 2.761l5.091-1.801z" />
+	<path fill="#e0d9db" d="m44.33 32.539l6.496-2.798v2.634L44.33 35.2z" />
+	<path fill="#cc293d" d="M38.7 26.46s9.321-2.792 13.145.988l-3.658 1.115l-4.572.736z" />
+	<path fill="#d0c9cc" d="m0 36.492l.244 1.995l5.28 1.415l-.249-2.476z" />
+	<path fill="#a5a2a3" d="m5.524 39.902l2.321-.993l-.338-2.512l-2.232 1.029z" />
+	<path fill="#be1e2d" d="m28.12 24.812l10.578 1.648v4.878s-16.964 7.07-18.542 8.309l-4.328 3.983s-4.535 1.1-9-1.648l-.547-5.286s7.349-8.863 21.839-11.884" />
+	<path fill="#243438" d="M6.834 38.487s1.9 1.078 5.952 1.31c0 0 .748.255.903 1l.458 3.262l-5.414-.695l-1.285-.486l-.438-.785z" />
+	<path fill="#d0c9cc" d="M6.834 42.06s2.257 1.796 8.03 1.784l.094 1.501s-4.602.587-7.968-2.02l-.159-1.265" />
+	<path fill="#d8d4d5" d="m8.567 35.3l-3.254-.97L0 36.492l5.275.934l3.292-1.548z" />
+	<path fill="#db3a0e" d="M6.283 36.708s1.303 2.971 8.171 1.597c0 0 15.25-10.35 24.25-12.09l-10.578-1.647c0-.001-14.17 3.233-21.839 12.139" />
+	<g fill="#be1e2d">
+		<path d="M44.35 27.449s2.904-2.13 8.215.318v1.209l-8.215 3.612z" />
+		<path d="m38.7 26.46l5.65.989v5.139L38.7 31.34z" />
+	</g>
+	<path fill="#c1bfc0" d="M39.908 30.345s-3.491.432-1.793 4.39l1.562 1.695l2.893-1.497l1.763.267v-2.661l-1.963-.398c-.001 0-.299-1.898-2.462-1.796" />
+	<path fill="#2e4044" d="M33.2 32.463s-2.983-.151-3.729.797c0 0-2.896 2.043-2.449 7.727l.298 3.937l.2.498s5.589 1.994 7.779 1.843c0 0 1.986-.35 3.132-1.544c0 0 3.238-2.891 2.144-9.569c0 0-.581-2.766-4.169-3.309z" />
+	<path fill="#d0c9cc" d="M39.3 40.853c-.396 2.082-1.602 3.599-2.693 3.387c-1.091-.206-1.652-2.061-1.256-4.141c.396-2.082 1.605-3.599 2.696-3.389c1.092.208 1.652 2.062 1.253 4.143" />
+	<path fill="#2e4044" d="M57.649 23.29s-2.375-.129-2.972.682c0 0-2.304 1.751-1.946 6.619l.235 3.374l.157.428s4.451 1.707 6.193 1.579c0 0 1.582-.3 2.496-1.324c0 0 2.575-2.478 1.704-8.199c0 0-.464-2.37-3.319-2.835z" />
+	<path fill="#d0c9cc" d="M62.51 30.479c-.322 1.782-1.28 3.082-2.147 2.904c-.867-.18-1.314-1.77-1-3.552c.318-1.782 1.276-3.082 2.147-2.903c.867.178 1.314 1.769 1 3.551" />
+	<path fill="#cc293d" d="m15.196 42.577l4.292-1.952l8.485 1.052l1.648 3.147l-6.411 2.91l-8.12-2.062z" />
+	<path fill="#d8d4d5" d="m17.14 39.941l4.95-1.921l6.68 1.03l-.797 2.627l-4.763 2.029l-5.957-1.386z" />
+	<path fill="#d0c9cc" d="m14.86 43.848l.101 1.502l8.139 1.92v-1.525zm2.28-3.907l5.96 1.399l.11 2.366l-5.957-1.386z" />
+	<path fill="#a5a2a3" d="m23.1 41.34l5.67-2.29l-.797 2.627l-4.763 2.029z" />
+	<path fill="#2e3192" d="M32.19 24.17s.062-4.301 4.113-4.425c0 0 3.709-.28 3.054 4.271c-.651 4.55-.62.404-.809.437c-.188.03-5.236.53-5.236.53z" />
+	<path fill="#939598" d="M32.28 22.948s.311-.739 1.747-.708c0 0 3.826 0 4.062.904c0 0 .502 1.497-5.645 1.216c.001 0-.654-.376-.164-1.412" />
+	<path fill="#be1e2d" d="m62.55 16.928l-2.39-.302l-7.09 3.298l2.597.511z" />
+	<g fill="#cc293d">
+		<path d="m30.995 25.02l-2.873-.447s-14.17 3.234-21.839 12.14c0 0 .185.418.777.871c8.489-9.161 20.348-11.915 23.935-12.564" />
+		<path d="M9.517 38.543c1.189.196 2.792.19 4.938-.238c0 0 15.25-10.35 24.25-12.09l-3.396-.53C21.56 27.942 12.159 36.023 9.521 38.542" />
+	</g>
+	<path fill="#fff" d="M30.995 25.02c-3.587.649-15.446 3.403-23.936 12.564c.493.373 1.272.77 2.457.964c2.642-2.519 12.04-10.6 25.788-12.857z" />
+	<path fill="#cc293d" d="m46.68 18.47l4.293-2.585l3.537.285l-5.3 2.89z" />
+	<path fill="#939598" d="M29.621 34.453s-1.389 1.495-1.456 3.248l5.201 1.089s.521-2.175 1.938-3.468zm25.097-9.495s-1.197 1.293-1.256 2.805l4.489.942s.452-1.879 1.673-2.995zM5.076 29.525c-.134.012-1.531 1.715-1.531 2.399l4.086.918s.82-2.183 1.639-2.726z" />
+</svg></span> 50+ Cars</div>
+      <div class="badge"><span class="badge-icon"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 80 80">
+	<rect width="80" height="80" fill="none" />
+	<g fill="none">
+		<path fill="#2f80ed" d="M29.393 14.393a27.717 27.717 0 1 1 21.214 51.214a27.717 27.717 0 0 1-21.214-51.214" />
+		<path fill="#6fcf97" fill-rule="evenodd" d="M23.687 17.587q.908-.66 1.87-1.248l2.066 2.834l-1.917.052zm-10.64 15.966A27.7 27.7 0 0 1 19.07 21.83l1.688 1.797l2.675-.28l.483-3.394l1.511 1.534l2.297.277l.574 1.863l-6.66 6.977l.23 2.998l-1.876-2.284h-3.215v2.655l2.832.833l2.258 2.577l4.476.198l2.223 2.497l2.45.766v3.476l-7.885 8.245v5.708l-1.79-1.302l-1.004-2.701v-6.7l-2.526-3.25l-.154-4.757l1.761-1.982l-1.531-1.903l-3.448-.566zm17.29-19.538q1.088-.405 2.198-.715l7.137-.418l.316 5.625l-5.41 5.385l-2.474-2.991l.075-2.063l-2.24-2.424zm26.276 3.786q.81.608 1.575 1.271l-2.732 2.422l-.589-1.961zm1.757 1.43l.596.742l-1.668 1.805l-.124 1.392l-3.535.077l-2.474 2.266l-1.569-5.98l-3.725 2.934l-.197 2.877l5.49.17l-1.273 2.749l-2.195.712l.229 1.482l2.278.242l2.166-2.114l1.444.025l1.69 1.966l1.296-.12l1.296-.118l.896-.902l1.718-.104l2.315 2.63l-1.842 1.831l-2.76-.094l-.4.732l-3.493-1.246l-.134-1.107l-3.42.116l-.546-.684l-2.215 2.848l-.575 5.417l3.585 3.61l4.182.052l.096 5.378l1.771 1.403l.15 4.744l1.195 1.65l2.365.052l3.186-3.352l.025-7.761l2.913-2.991l-.498-1.908l-4.481-4.641l.996-.67l3.012 3.17l1.55.065a27.7 27.7 0 0 0-2.049-9.13l-.59.55l-1.655-.942l-2.683.278l1.092-2.364l2.567-.193a27.7 27.7 0 0 0-5.998-7.543" clip-rule="evenodd" />
+	</g>
+</svg></span> Multiplayer PvP</div>
+      <div class="badge"><span class="badge-icon"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 128 128">
+	<rect width="128" height="128" fill="none" />
+	<path fill="#fec417" d="M97.12 59.35c2.22-1.83 15.04-9.76 22.06-16.44c5.48-5.22 7.6-18.85-.83-25.48c-10.96-8.61-21.48.43-21.48.43s-.92-5.11-7.32-8.11c-8.06-3.78-18.27-5.19-27.66-5.07c-9.1.11-17.48 1.21-24.92 4.86c-6.66 3.27-7.06 7.93-7.06 7.93s-8.74-8.35-19.45-1.57C-.24 22.69 2.83 36.29 7.98 42c6.71 7.44 14.77 11.23 18.43 13.97c3.65 2.74 7.15 5.35 7.15 7.7s-1.04 2.87-1.44 2.74c-.39-.13-1.08-2.42-2.87-1.44c-2.44 1.35-1.7 6.79 3.39 7.31c4.93.51 5.87-4.7 5.87-4.7l.78-5.09l8.09 5.61l8.87 7.31l-.26 6.26s-.39 4.83-2.74 9.01s-6.13 8.35-6.13 8.35l-.12 3.78l32.89-.78l-1.04-3.65s-4.24-4.66-6.79-9.66c-1.82-3.58-2.11-7.19-2.11-7.19l-.08-8.98l17.07-10.46s1.83 1.44 1.57 1.96s-.32 5.85 3.78 7.83c4.05 1.96 7.31-.52 6.92-3.92c-.39-3.39-2.48-2.22-3.13-1.7s-2.09.65-2.48-1.31c-.4-1.94 1.3-3.77 3.52-5.6M13.09 40.89l-3.91-11.9l4.73-6.19l5.3-1.55s6.77 5.05 7.01 5.46s4.32 8.8 4.32 8.8l5.38 19.48zm76.86 15.65c.08-.41 5.05-20.87 5.05-20.87c0-.24 3.5-1.87 3.5-2.2s6.36-10.68 6.36-10.68l10.6.41l2.2 10.51l-5.3 8.72c.01.01-22.49 14.51-22.41 14.11" />
+	<path fill="#ffa828" d="M119.92 30.64c-.78-9.32-10-11.55-13.79-10.2s-6.25 3.88-7.09 7.48c-.68 2.91-1.36 4.85-2.14 5.15c-.86.32-1.65.19-1.65.19s-.14-6.3-.1-8.84c.1-5.24 1.7-6.58 1.7-6.58s-.34-1.77-1.02-2.75c-.68-.97-1.94-2.23-1.94-2.23s.29 2.52-.97 3.11s-2.62-.29-2.62-.29l1.26 5.24s-2.04 26.12-2.23 26.7s-7.86 13.88-7.86 13.88s-4.47 4.18-6.6 5.15c-2.14.97-3.98 3.5-12.23 3.59c-8.25.1-15.34-6.41-15.34-6.41l-7.09-6.8l-5.24-15.44l-.78-15.73l.33-5.72l.23-2.39l-.37-1.21s-.68.68-1.94.39s-1.75-1.94-1.75-1.94s-.49.78-.58 1.17c-.1.39-.2 1.29-.2 1.29s1.36 1.43 1.65 3.47s-.1 10.49-1.55 10.29c-1.46-.19-.98-7.28-6.51-10c-4.79-2.36-11.94-1.65-14.86 4.27c-2.91 5.92-.78 12.91 8.35 19.42s18.85 11.98 20.39 17.2c1.84 6.21-2.33 9.9-2.33 9.9s3.03-.42 4.52-3.67c.48-1.05.66-2.58.73-3.49c3.45 4.5 8.04 8.31 14.12 10.15c2.3.79 4.89 1.19 8.49 1.19c.52 0 1.03-.02 1.54-.04c4.21-.15 7.81-.94 11.3-2.67c4.71-2.18 8.36-5.51 11.18-9.29c-.08.9.47 3.14 1.52 4.91c1.84 3.11 4.95 3.3 4.95 3.3s-4.27-2.52-3.4-8.54s4.85-8.16 10.87-12.04c6.04-3.89 19.82-11.85 19.05-21.17M21.27 43.85c-2.71-1.91-7.46-4.46-9.42-8.35c-2.61-5.19-.49-11.46 4.47-12.23c10.3-1.62 10.49 11.17 11.17 12.72s2.62 1.65 2.62 1.65s.07.86.35 2.52c.01.05.02.09.02.14l.03.15c.19 1.13.46 2.54.84 4.15l.03.12c.21.91.43 1.77.66 2.56c.46 1.66 1.02 3.45 1.71 5.29c-1-.68-6.73-4.65-12.48-8.72m93.31-7.19c-2.15 3.48-6.5 6.07-9.71 8.25c-4.14 2.81-10.3 7.03-12.04 8.21c.4-1.06.75-2.11 1.07-3.14c.52-1.36 1.07-3.02 1.45-4.81c1-4.7 1.17-8.81 1.17-8.81s2.04.58 3.3-.78s1.73-5.58 2.91-7.57c1.84-3.11 5.53-6.31 11.07-2.43c3.2 2.25 3.32 6.96.78 11.08M60.52 79.31l5.65-.07s.15 6.17 1.04 10.77c.89 4.61 2.08 9.73 2.08 9.73s-11.51 3.86-11.44-.3s1.78-12.26 1.78-12.26s1.04-9.65.89-7.87" />
+	<path fill="#ffa828" d="M51.04 15.19s6.29-.71 12.14-.62s11.87 1.24 11.87 1.24s-.35 19.58-1.42 30.57c-1.06 10.99-5.22 19.22-6.33 21.55c-1.07 2.26-1.85 3.47-1.85 3.47l-5.64-.66l-9.75-19.58z" />
+	<path fill="#ffefab" d="M43.51 18.12s1.77-.89 4.34-1.86c2.33-.88 4.43-1.15 4.43-1.15s.06 12.98.27 22.24c.18 7.89 3.1 20.82 4.52 24.28s3.98 8.74 3.98 8.74s-5.15-.74-8.32-4.76c-1.67-2.12-9.48-18.52-9.75-29.33s.79-18.43.53-18.16" />
+	<path fill="#fffcfd" d="M40.58 19.62c-.18.53-1.59 11.7.62 22.06s5.48 17.45 7.64 20.26c1.92 2.49 3.17 3.67 3.88 3.67s-2.92-8.59-4.61-15.33c-1.68-6.73-2.57-14.8-2.75-18.78c-.18-3.99-.35-14.27-.35-14.27s-1.95.89-2.39 1.15c-.44.27-2.04 1.24-2.04 1.24" />
+	<path fill="#ffefab" d="M53.34 99.01s3.81-6.2 4.61-10.9s1.24-8.86 1.24-8.86l2.36.1s-.23 6.81-.5 11.42s-1.06 9.13-1.06 9.13z" />
+	<path fill="#d1701c" d="M56.27 75.41s1.77-1.73 6.64-1.73s6.96 1.87 6.96 1.87l.13 6.01s-3.24-1.01-7.18-1.06c-3.28-.04-6.81 1.18-6.81 1.18zM35 15.72c.82-.76 8.68-6.66 27.29-6.82c20.02-.18 27.53 5.62 28 5.94c.53.35 1.15 1.95.89 2.66c-.27.71-.8.97-2.3.35c-1.51-.62-8.95-6.05-26.85-5.49c-17.19.53-24.48 5.76-25.25 6.2c-.62.35-1.77.44-2.3-.27c-.54-.7-.01-2.07.52-2.57m56.18 4.17c-2.3.18-.71 18.7-5.58 30.3c-5.22 12.41-11.88 15.95-11.61 16.66s6.79-1.26 10.9-7.09c3.81-5.4 6.11-10.19 7.18-16.57c1.05-6.38 1.67-23.5-.89-23.3m-56.67 2.12c-.58-.03.01 9.21-.93 13.27c-.36 1.56-1.24 1.88-1.33 2.23s1.93 12.24 5.32 17.46c3.28 5.05 9.75 11.34 10.81 10.28s-4.7-4.61-8.59-12.32c-2.24-4.42-4.52-11.08-4.61-18.7c-.06-5.04.57-12.15-.67-12.22" />
+	<path fill="#865c50" d="m86.77 112.71l-.01-14.29H40.89c.14 0 .03 11.62.01 14.34h-6.52v10.35h58.25v-10.35z" />
+	<path fill="#fcc219" d="M55.59 105.93c-1.13-.05-2.43.18-2.48 1.58s-.05 5.45-.05 6.22s.63 1.44 2.21 1.49s16.41 0 17.45 0s1.58-.9 1.62-1.8c.05-.9-.05-4.69-.05-5.72c0-1.71-1.53-1.71-2.57-1.71c-1.12-.02-16.13-.06-16.13-.06" />
+</svg></span> Ranked Seasons</div>
+    </div>
+    <div class="hero-btns">
+      <a href="#preregister" class="btn-primary">⚡ Pre-Register Now</a>
+      <a href="#about" class="btn-outline">Explore Game ↓</a>
+    </div>
+  </div>
+
+  <!-- Car SVG Visual -->
+  <div class="hero-right">
+    <svg class="car-visual" viewBox="0 0 600 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Car body -->
+      <defs>
+        <linearGradient id="carGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6367FF"/>
+          <stop offset="50%" stop-color="#8494FF"/>
+          <stop offset="100%" stop-color="#FFDBFD"/>
+        </linearGradient>
+        <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#C9BEEF" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#6367FF" stop-opacity="0.4"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Ground shadow -->
+      <ellipse cx="310" cy="265" rx="220" ry="16" fill="rgba(99,103,255,0.15)"/>
+      <!-- Car body low -->
+      <path d="M80 210 L520 210 L540 235 L60 235 Z" fill="url(#carGrad)" opacity="0.9"/>
+      <!-- Car body mid -->
+      <path d="M100 165 L500 165 L520 210 L80 210 Z" fill="url(#carGrad)"/>
+      <!-- Car top / cabin -->
+      <path d="M180 120 L380 115 L450 165 L130 165 Z" fill="url(#carGrad)" opacity="0.95"/>
+      <!-- Windshield -->
+      <path d="M200 130 L360 126 L420 165 L165 165 Z" fill="url(#glassGrad)" opacity="0.7"/>
+      <!-- Side window -->
+      <path d="M180 128 L200 130 L165 165 L152 162 Z" fill="url(#glassGrad)" opacity="0.5"/>
+      <!-- Wheels -->
+      <circle cx="175" cy="235" r="38" fill="#0e0e1c" stroke="#6367FF" stroke-width="3"/>
+      <circle cx="175" cy="235" r="26" fill="#13131f" stroke="#8494FF" stroke-width="2"/>
+      <circle cx="175" cy="235" r="12" fill="url(#carGrad)"/>
+      <circle cx="430" cy="235" r="38" fill="#0e0e1c" stroke="#6367FF" stroke-width="3"/>
+      <circle cx="430" cy="235" r="26" fill="#13131f" stroke="#8494FF" stroke-width="2"/>
+      <circle cx="430" cy="235" r="12" fill="url(#carGrad)"/>
+      <!-- Wheel spokes -->
+      <line x1="175" y1="209" x2="175" y2="261" stroke="#6367FF" stroke-width="2" opacity="0.6"/>
+      <line x1="149" y1="235" x2="201" y2="235" stroke="#6367FF" stroke-width="2" opacity="0.6"/>
+      <line x1="157" y1="216" x2="193" y2="254" stroke="#6367FF" stroke-width="1.5" opacity="0.4"/>
+      <line x1="193" y1="216" x2="157" y2="254" stroke="#6367FF" stroke-width="1.5" opacity="0.4"/>
+      <line x1="430" y1="209" x2="430" y2="261" stroke="#6367FF" stroke-width="2" opacity="0.6"/>
+      <line x1="404" y1="235" x2="456" y2="235" stroke="#6367FF" stroke-width="2" opacity="0.6"/>
+      <line x1="412" y1="216" x2="448" y2="254" stroke="#6367FF" stroke-width="1.5" opacity="0.4"/>
+      <line x1="448" y1="216" x2="412" y2="254" stroke="#6367FF" stroke-width="1.5" opacity="0.4"/>
+      <!-- Headlight -->
+      <path d="M510 178 L540 185 L540 210 L510 210 Z" fill="#FFDBFD" opacity="0.9" filter="url(#glow)"/>
+      <path d="M540 185 L580 170 L580 215 L540 210 Z" fill="#FFDBFD" opacity="0.4"/>
+      <!-- Headlight beam -->
+      <path d="M540 192 L600 160 L600 210 L540 208 Z" fill="url(#glassGrad)" opacity="0.15"/>
+      <!-- Tail light -->
+      <rect x="78" y="185" width="8" height="20" fill="#FF4466" opacity="0.9" rx="1"/>
+      <!-- Body stripe -->
+      <path d="M85 195 L515 195" stroke="#FFDBFD" stroke-width="1" opacity="0.4"/>
+      <!-- Neon underglow -->
+      <path d="M100 235 L500 235" stroke="url(#carGrad)" stroke-width="3" opacity="0.6" filter="url(#glow)"/>
+      <!-- Speed lines behind -->
+      <line x1="0" y1="150" x2="70" y2="155" stroke="#6367FF" stroke-width="1" opacity="0.3"/>
+      <line x1="10" y1="175" x2="65" y2="178" stroke="#8494FF" stroke-width="1.5" opacity="0.2"/>
+      <line x1="0" y1="200" x2="60" y2="200" stroke="#6367FF" stroke-width="0.8" opacity="0.2"/>
+    </svg>
+  </div>
+</section>
+
+<div class="neon-sep"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-tag reveal">// About The Game</div>
+  <h2 class="section-title reveal">FEEL EVERY<br><span style="color:var(--p1)">CORNER</span></h2>
+  <div class="section-line reveal"></div>
+
+  <div class="about-grid">
+    <div class="about-text reveal">
+      <p>
+        StreetHorizon drops you into a pulse-pounding open world of illegal street racing. Navigate rain-slicked highways, drift through neon-lit tunnels, and outrun your rivals across a sprawling urban landscape.
+      </p>
+      <p>
+        Powered by Unreal Engine 5, every car, every puddle, and every explosion is rendered with cinematic realism. Your mobile device becomes a console-grade racing machine.
+      </p>
+      <div class="about-features">
+        <div class="feature-card">
+          <h4>⚡ Real Physics</h4>
+          <p>UE5 Chaos Physics engine simulates real-world vehicle dynamics.</p>
+        </div>
+        <div class="feature-card">
+          <h4><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64">
+	<rect width="64" height="64" fill="none" />
+	<path fill="#d65129" d="M64 56.795a6.864 6.864 0 0 1-6.861 6.869H7.196a6.864 6.864 0 0 1-6.86-6.869V6.86a6.863 6.863 0 0 1 6.86-6.864h49.943A6.863 6.863 0 0 1 64 6.86z" />
+	<g fill="#fbed21">
+		<ellipse cx="26.627" cy="34.744" opacity="0.8" rx="23.572" ry="22.01" />
+		<ellipse cx="26.629" cy="35.34" rx="19.641" ry="18.342" />
+	</g>
+	<path fill="#25333a" d="M6.467 49.54v13.916c0 .117.039.211.083.211h5.386c.042 0 .082-.094.082-.211V49.54a.3.3 0 0 0-.024-.143v-.006s0-.004-.002-.006c-.013-.033-.034-.057-.055-.057H6.551c-.045 0-.083.099-.083.212" />
+	<path fill="#6cb5c6" d="M6.824 55.58h4.744c.038 0 .073-.012.073-.023v-1.426c0-.012-.036-.021-.073-.021H6.824a.3.3 0 0 0-.053.006v.004c-.008.004-.018.008-.018.012v1.426c0 .001.03.022.071.022m.046-1.961h4.742c.037 0 .073-.012.073-.023V52.17c0-.012-.037-.02-.073-.02H6.87c-.02 0-.042 0-.053.004v.004c0 .004-.019.008-.019.012v1.426c0 .011.029.023.072.023m0-2.053h4.742c.037 0 .073-.012.073-.021v-1.428c0-.014-.037-.021-.073-.021H6.87c-.02 0-.042 0-.053.006c0 .008-.019.008-.019.016v1.428c0 .009.029.02.072.02m0 6.114h4.742c.037 0 .073-.012.073-.02v-1.429c0-.014-.037-.021-.073-.021H6.87c-.02 0-.042.006-.053.008c0 .006-.019.008-.019.014v1.429c0 .007.029.019.072.019m0 2.4h4.742c.037 0 .073-.012.073-.023v-1.426c0-.014-.037-.023-.073-.023H6.87c-.02 0-.042.006-.053.008v.002c0 .004-.019.008-.019.014v1.426s.029.022.072.022" />
+	<path fill="#25333a" d="M12.785 56.779v6.783c0 .055.029.102.066.102h4.384c.04 0 .068-.047.068-.102v-6.784q.001-.044-.019-.07v-.002q-.023-.03-.05-.029H12.85c-.036 0-.065.046-.065.102" />
+	<path fill="#6cb5c6" d="M13.08 62.26h3.862c.029 0 .06-.014.06-.021v-1.274c0-.012-.031-.02-.06-.02H13.08c-.016 0-.035.002-.042.008c-.006.002-.016.008-.016.012v1.274c0 .007.024.021.058.021m.03-1.75h3.862c.032 0 .061-.014.061-.023v-1.274a.1.1 0 0 0-.061-.018H13.11a.1.1 0 0 0-.041.008c-.001.002-.016.006-.016.001v1.274c0 .009.026.023.057.023m0-1.827h3.862c.032 0 .061-.008.061-.02v-1.272c0-.012-.029-.02-.061-.02H13.11c-.014 0-.032.004-.041.006c-.001.006-.016.001-.016.001v1.275c0 .013.026.021.057.021" />
+	<path fill="#25333a" d="M6.467 50.625v12.844c0 .107.033.195.07.195h4.658c.037 0 .073-.088.073-.195V50.625a.3.3 0 0 0-.023-.133v-.006c-.013-.033-.029-.055-.05-.055H6.537c-.037 0-.07.089-.07.194m6.817 7.475v5.479c0 .047.024.084.053.084h3.314c.029 0 .051-.037.051-.084V58.1c0-.023-.003-.045-.016-.057v-.002c-.001-.014-.02-.023-.02-.023h-3.33c-.028 0-.052.037-.052.082" opacity="0.6" />
+	<path fill="#25333a" d="M58.911 49.54v13.916c0 .117-.04.211-.083.211h-5.387c-.043 0-.082-.094-.082-.211V49.54c0-.063 0-.111.025-.143v-.006s0-.004.002-.006c.012-.033.033-.057.055-.057h5.387c.043 0 .083.099.083.212" />
+	<path fill="#6cb5c6" d="M58.55 55.58h-4.745c-.037 0-.075-.012-.075-.023v-1.426c0-.012.038-.021.075-.021h4.745c.016 0 .039.004.049.006v.004c0 .004.02.008.02.012v1.426s-.03.022-.069.022m-.04-1.961h-4.743c-.04 0-.075-.012-.075-.023V52.17c0-.012.035-.02.075-.02h4.743c.02 0 .041 0 .053.004v.004c.008.004.018.008.018.012v1.426c0 .011-.03.023-.071.023m0-2.053h-4.743c-.04 0-.075-.012-.075-.021v-1.428c0-.014.035-.021.075-.021h4.743c.02 0 .041 0 .053.006c.008.008.018.008.018.016v1.428c0 .009-.03.02-.071.02m0 6.114h-4.743c-.04 0-.075-.012-.075-.02v-1.429c0-.014.035-.021.075-.021h4.743c.02 0 .041.006.053.008c.008.006.018.008.018.014v1.429c0 .007-.03.019-.071.019m0 2.4h-4.743c-.04 0-.075-.012-.075-.023v-1.426c0-.014.035-.023.075-.023h4.743c.02 0 .041.006.053.008v.002c.008.004.018.008.018.014v1.426s-.03.022-.071.022" />
+	<path fill="#25333a" d="M52.594 56.779v6.783c0 .055-.031.102-.066.102h-4.386c-.039 0-.068-.047-.068-.102v-6.784q0-.044.02-.07v-.002c.016-.02.029-.029.049-.029h4.386c.034 0 .065.046.065.102" />
+	<path fill="#6cb5c6" d="M52.3 62.26h-3.863c-.03 0-.062-.014-.062-.021v-1.274c0-.012.031-.02.062-.02H52.3q.025 0 .041.008c.006.002.016.008.016.012v1.274c0 .007-.026.021-.057.021m-.03-1.75h-3.864c-.031 0-.059-.014-.059-.023v-1.274s.027-.018.059-.018h3.864c.014 0 .031.002.039.008c.012.002.018.006.018 0v1.274c0 .009-.026.023-.057.023m0-1.826h-3.864c-.031 0-.059-.008-.059-.02v-1.272c0-.012.027-.02.059-.02h3.864c.014 0 .031.004.039.006c.012.006.018 0 .018 0v1.275c0 .013-.026.021-.057.021" />
+	<path fill="#25333a" d="M58.911 50.625v12.844c0 .107-.032.195-.071.195h-4.656c-.037 0-.073-.088-.073-.195V50.625a.4.4 0 0 1 .02-.133v-.002l.004-.004c.013-.033.028-.055.05-.055h4.656c.038 0 .07.089.07.194M52.09 58.1v5.479c0 .047-.023.084-.053.084h-3.316c-.025 0-.048-.037-.048-.084V58.1c0-.023.004-.045.014-.057v-.002l.021-.023h3.33c.028 0 .052.037.052.082" opacity="0.6" />
+	<ellipse cx="41.488" cy="41.01" fill="#4d606d" rx="3.792" ry="3.986" />
+	<path fill="#657e93" d="M47.1 41.926h-.773v-1.053c0-.219-.187-.32-.415-.32h-8.853c-.229 0-.334.102-.334.32v1.053h-.856c-.231 0-.514.162-.514.379v20.99c0 .217.282.375.514.375h11.232c.231 0 .399-.158.399-.375v-20.99c0-.217-.169-.379-.4-.379" />
+	<path fill="#5d7382" d="M47.16 44.23h-.773v-.941c0-.193-.188-.285-.415-.285h-.677c-.22-1.77-1.804-3.148-3.749-3.148c-1.943 0-3.527 1.379-3.748 3.148h-.678c-.228 0-.334.092-.334.285v.941h-.857c-.23 0-.514.146-.514.338v18.759c0 .195.283.338.514.338h11.233c.232 0 .399-.143.399-.338V44.568c0-.192-.168-.338-.401-.338" />
+	<path fill="#657e93" d="M8.837 24.889h16.358v38.775H8.837z" />
+	<path fill="#607887" d="M8.803 29.13H22.99v34.534H8.803z" />
+	<path fill="#7a94a5" d="M8.837 27.617h16.358v3.03H8.837zm0 4.846h16.358v2.725H8.837zm0 4.847h16.358v3.03H8.837zm0 5.15h16.358v3.03H8.837zm0 5.147h16.358v3.03H8.837zm0 4.843h16.358v3.03H8.837zm0 5.15h16.358v3.03H8.837z" />
+	<path fill="#556977" d="M27.25 48.13h6.551v15.533H27.25z" />
+	<path fill="#607887" d="M27.24 49.83h5.685v13.834H27.24z" />
+	<path fill="#7a94a5" d="M27.25 49.23h6.551v1.211H27.25zm0 1.93h6.551v1.092H27.25zm0 1.94h6.551v1.215H27.25zm0 2.07h6.551v1.215H27.25zm0 2.06h6.551v1.215H27.25zm0 1.94h6.551v1.213H27.25zm0 2.06h6.551v1.217H27.25z" />
+	<path fill="#89bad3" d="M37.9 45.01c0 .102-.086.248-.192.248H36.63c-.106 0-.099-.146-.099-.248v-1.467c0-.102-.008-.244.099-.244h1.078c.106 0 .192.143.192.244zm2.16 0c0 .102-.138.248-.244.248h-1.08c-.11 0-.242-.146-.242-.248v-1.467c0-.102.132-.244.242-.244h1.08c.106 0 .244.143.244.244zm2.16 0c0 .102-.153.248-.262.248H40.88c-.106 0-.23-.146-.23-.248v-1.467c0-.102.124-.244.23-.244h1.078c.108 0 .262.143.262.244zm1.95 0c0 .102-.008.248-.112.248h-1.08c-.107 0-.177-.146-.177-.248v-1.467c0-.102.069-.244.177-.244h1.08c.104 0 .112.143.112.244zm-6.27 2.515c0 .104-.063.277-.169.277h-1.08c-.104 0-.12-.174-.12-.277v-1.463c0-.104.016-.219.12-.219h1.08c.106 0 .169.115.169.219zm2.16 0c0 .104-.116.277-.227.277h-1.078c-.105 0-.262-.174-.262-.277v-1.463c0-.104.156-.219.262-.219h1.078c.11 0 .227.115.227.219zm2.16 0c0 .104-.134.277-.238.277h-1.08c-.106 0-.252-.174-.252-.277v-1.463c0-.104.146-.219.252-.219h1.08c.104 0 .238.115.238.219zm2.15 0c0 .104-.186.277-.291.277h-1.078c-.106 0-.199-.174-.199-.277v-1.463c0-.104.093-.219.199-.219h1.078c.105 0 .291.115.291.219zM37.9 50.07c0 .102-.074.281-.183.281h-1.08c-.104 0-.106-.18-.106-.281v-1.465c0-.102.002-.213.106-.213h1.08c.108 0 .183.111.183.213zm2.16 0c0 .102-.13.281-.236.281h-1.078c-.107 0-.252-.18-.252-.281v-1.465c0-.102.145-.213.252-.213h1.078c.106 0 .236.111.236.213zm2.16 0c0 .102-.142.281-.252.281h-1.076c-.108 0-.242-.18-.242-.281v-1.465c0-.102.134-.213.242-.213h1.076c.11 0 .252.111.252.213zm1.95 0c0 .102.004.281-.103.281h-1.079c-.104 0-.188-.18-.188-.281v-1.465c0-.102.083-.213.188-.213h1.079c.106 0 .103.111.103.213zm-6.27 2.52c0 .102-.053.109-.159.109h-1.08c-.104 0-.13-.008-.13-.109v-1.467c0-.102.025-.188.13-.188h1.08c.106 0 .159.086.159.188zm2.16 0c0 .102-.106.109-.213.109h-1.078c-.107 0-.275-.008-.275-.109v-1.467c0-.102.168-.188.275-.188h1.078c.106 0 .213.086.213.188zm2.16 0c0 .102-.122.109-.229.109h-1.078c-.106 0-.264-.008-.264-.109v-1.467c0-.102.157-.188.264-.188h1.078c.106 0 .229.086.229.188zm2.15 0c0 .102-.174.109-.277.109h-1.08c-.11 0-.211-.008-.211-.109v-1.467c0-.102.101-.188.211-.188h1.08c.104 0 .277.086.277.188zm-6.47 2.57c0 .102-.074.09-.183.09h-1.08c-.104 0-.106.012-.106-.09v-1.465c0-.104.002-.207.106-.207h1.08c.108 0 .183.104.183.207zm2.16 0c0 .102-.13.09-.236.09h-1.078c-.107 0-.252.012-.252-.09v-1.465c0-.104.145-.207.252-.207h1.078c.106 0 .236.104.236.207zm2.16 0c0 .102-.142.09-.252.09h-1.076c-.108 0-.242.012-.242-.09v-1.465c0-.104.134-.207.242-.207h1.076c.11 0 .252.104.252.207zm1.95 0c0 .102.004.09-.103.09h-1.079c-.104 0-.188.012-.188-.09v-1.465c0-.104.083-.207.188-.207h1.079c.106 0 .103.104.103.207zm-6.27 2.516c0 .104-.053.117-.159.117h-1.08c-.104 0-.13-.014-.13-.117v-1.465c0-.102.025-.18.13-.18h1.08c.106 0 .159.078.159.18zm2.16 0c0 .104-.106.117-.213.117h-1.078c-.107 0-.275-.014-.275-.117v-1.465c0-.102.168-.18.275-.18h1.078c.106 0 .213.078.213.18zm2.16 0c0 .104-.122.117-.229.117h-1.078c-.106 0-.264-.014-.264-.117v-1.465c0-.102.157-.18.264-.18h1.078c.106 0 .229.078.229.18zm2.15 0c0 .104-.174.117-.277.117h-1.08c-.11 0-.211-.014-.211-.117v-1.465c0-.102.101-.18.211-.18h1.08c.104 0 .277.078.277.18zm1.96-12.666c0 .102-.039.248-.146.248h-1.076c-.11 0-.151-.146-.151-.248v-1.467c0-.102.041-.244.151-.244h1.076c.106 0 .146.143.146.244zm0 2.515c0 .104-.016.277-.124.277H45.13c-.11 0-.173-.174-.173-.277v-1.463c0-.104.063-.219.173-.219h1.076c.108 0 .124.115.124.219zm0 2.545c0 .102-.027.281-.134.281h-1.08c-.108 0-.159-.18-.159-.281v-1.465c0-.102.051-.213.159-.213h1.08c.106 0 .134.111.134.213zm0 2.52c0 .102-.004.109-.11.109h-1.08c-.108 0-.183-.008-.183-.109v-1.467c0-.102.074-.188.183-.188h1.08c.106 0 .11.086.11.188zm0 2.57c0 .102-.027.09-.134.09h-1.08c-.108 0-.159.012-.159-.09v-1.465c0-.104.051-.207.159-.207h1.08c.106 0 .134.104.134.207zm0 2.516c0 .104-.004.117-.11.117h-1.08c-.108 0-.183-.014-.183-.117v-1.465c0-.102.074-.18.183-.18h1.08c.106 0 .11.078.11.18zM37.9 60.24c0 .104-.076.098-.185.098h-1.078c-.106 0-.106.006-.106-.098v-1.463c0-.102 0-.203.106-.203h1.078c.108 0 .185.102.185.203zm2.16 0c0 .104-.132.098-.236.098h-1.08c-.105 0-.25.006-.25-.098v-1.463c0-.102.145-.203.25-.203h1.08c.104 0 .236.102.236.203zm2.16 0c0 .104-.146.098-.252.098h-1.08c-.104 0-.238.006-.238-.098v-1.463c0-.102.134-.203.238-.203h1.08c.106 0 .252.102.252.203zm1.95 0c0 .104.004.098-.104.098h-1.077c-.108 0-.188.006-.188-.098v-1.463c0-.102.079-.203.188-.203h1.077c.108 0 .104.102.104.203zm-6.27 2.528c0 .102-.055.119-.161.119h-1.08c-.104 0-.128-.018-.128-.119v-1.467c0-.104.023-.176.128-.176h1.08c.106 0 .161.072.161.176zm2.16 0c0 .102-.108.119-.217.119h-1.076c-.109 0-.273-.018-.273-.119v-1.467c0-.104.164-.176.273-.176h1.076c.108 0 .217.072.217.176zm2.16 0c0 .102-.122.119-.232.119h-1.074c-.11 0-.264-.018-.264-.119v-1.467c0-.104.153-.176.264-.176h1.074c.11 0 .232.072.232.176zm2.15 0c0 .102-.176.119-.283.119h-1.078c-.106 0-.207-.018-.207-.119v-1.467c0-.104.101-.176.207-.176h1.078c.107 0 .283.072.283.176zm1.96-2.528c0 .104-.027.098-.138.098h-1.078c-.106 0-.157.006-.157-.098v-1.463c0-.102.051-.203.157-.203h1.078c.11 0 .138.102.138.203zm0 2.528c0 .102-.008.119-.114.119h-1.078c-.108 0-.181-.018-.181-.119v-1.467c0-.104.072-.176.181-.176h1.078c.106 0 .114.072.114.176z" />
+</svg> Open World</h4>
+          <p>Explore a 20 km² city — race day or night across 8 districts.</p>
+        </div>
+        <div class="feature-card">
+          <h4><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+	<rect width="32" height="32" fill="none" />
+	<g fill="none">
+		<path fill="#f8312f" d="M30 26.477h-2V27l-3.852.686L5.42 28.1L2 27l4.42-2.21C8.78 23.61 11.37 23 14 23h2l1 1h3v-3a7.24 7.24 0 0 1 3.247.768c.393.197.548.59.901.857c.264.2.795.54 1.032.777L26 24v-4.023h4z" />
+		<path fill="#f4f4f4" d="M28 25H6l-2 1h24z" />
+		<path fill="#e6e6e6" d="M26 20h4v-1h-4z" />
+		<path fill="#ca0b4a" d="M26 27H2v2h24z" />
+		<path fill="#f9c23c" d="M30 22h-4v-1h4zm-12 7h2.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5H18z" />
+		<path fill="#636363" d="M19 24h1v-3c-.55 0-1 .45-1 1zm-2 2h1v3h-1z" />
+		<path fill="#e6e6e6" d="M23.24 21.764L21 24h5l-.88-.88a7.2 7.2 0 0 0-1.88-1.356" />
+		<path fill="#321b41" d="M12 26.5a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0m18 0a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0" />
+		<path fill="#f4f4f4" d="M10 26.5a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0m18 0a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0" />
+	</g>
+</svg> Car Customization</h4>
+          <p>Deep visual and performance tuning for over 50 licensed vehicles.</p>
+        </div>
+        <div class="feature-card">
+          <h4><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48">
+	<rect width="32" height="32" fill="none" />
+	<path fill="#7cb342" d="M24 4C13 4 4 13 4 24s9 20 20 20s20-9 20-20S35 4 24 4" />
+	<path fill="#0277bd" d="M45 24c0 11.7-9.5 21-21 21S3 35.7 3 24S12.3 3 24 3s21 9.3 21 21m-21.2 9.7c0-.4-.2-.6-.6-.8c-1.3-.4-2.5-.4-3.6-1.5c-.2-.4-.2-.8-.4-1.3c-.4-.4-1.5-.6-2.1-.8h-4.2c-.6-.2-1.1-1.1-1.5-1.7c0-.2 0-.6-.4-.6c-.4-.2-.8.2-1.3 0c-.2-.2-.2-.4-.2-.6c0-.6.4-1.3.8-1.7c.6-.4 1.3.2 1.9.2c.2 0 .2 0 .4.2c.6.2.8 1 .8 1.7v.4c0 .2.2.2.4.2c.2-1.1.2-2.1.4-3.2c0-1.3 1.3-2.5 2.3-2.9c.4-.2.6.2 1.1 0c1.3-.4 4.4-1.7 3.8-3.4c-.4-1.5-1.7-2.9-3.4-2.7c-.4.2-.6.4-1 .6c-.6.4-1.9 1.7-2.5 1.7c-1.1-.2-1.1-1.7-.8-2.3c.2-.8 2.1-3.6 3.4-3.1l.8.8c.4.2 1.1.2 1.7.2c.2 0 .4 0 .6-.2s.2-.2.2-.4c0-.6-.6-1.3-1-1.7s-1.1-.8-1.7-1.1c-2.1-.6-5.5.2-7.1 1.7s-2.9 4-3.8 6.1c-.4 1.3-.8 2.9-1 4.4c-.2 1-.4 1.9.2 2.9c.6 1.3 1.9 2.5 3.2 3.4c.8.6 2.5.6 3.4 1.7c.6.8.4 1.9.4 2.9c0 1.3.8 2.3 1.3 3.4c.2.6.4 1.5.6 2.1c0 .2.2 1.5.2 1.7c1.3.6 2.3 1.3 3.8 1.7c.2 0 1-1.3 1-1.5c.6-.6 1.1-1.5 1.7-1.9c.4-.2.8-.4 1.3-.8c.4-.4.6-1.3.8-1.9c.1-.5.3-1.3.1-1.9m.4-19.4c.2 0 .4-.2.8-.4c.6-.4 1.3-1.1 1.9-1.5s1.3-1.1 1.7-1.5c.6-.4 1.1-1.3 1.3-1.9c.2-.4.8-1.3.6-1.9c-.2-.4-1.3-.6-1.7-.8c-1.7-.4-3.1-.6-4.8-.6c-.6 0-1.5.2-1.7.8c-.2 1.1.6.8 1.5 1.1c0 0 .2 1.7.2 1.9c.2 1-.4 1.7-.4 2.7c0 .6 0 1.7.4 2.1zM41.8 29c.2-.4.2-1.1.4-1.5c.2-1 .2-2.1.2-3.1c0-2.1-.2-4.2-.8-6.1c-.4-.6-.6-1.3-.8-1.9c-.4-1.1-1-2.1-1.9-2.9c-.8-1.1-1.9-4-3.8-3.1c-.6.2-1 1-1.5 1.5c-.4.6-.8 1.3-1.3 1.9c-.2.2-.4.6-.2.8c0 .2.2.2.4.2c.4.2.6.2 1 .4c.2 0 .4.2.2.4c0 0 0 .2-.2.2c-1 1.1-2.1 1.9-3.1 2.9c-.2.2-.4.6-.4.8s.2.2.2.4s-.2.2-.4.4c-.4.2-.8.4-1.1.6c-.2.4 0 1.1-.2 1.5c-.2 1.1-.8 1.9-1.3 2.9c-.4.6-.6 1.3-1 1.9c0 .8-.2 1.5.2 2.1c1 1.5 2.9.6 4.4 1.3c.4.2.8.2 1.1.6c.6.6.6 1.7.8 2.3c.2.8.4 1.7.8 2.5c.2 1 .6 2.1.8 2.9c1.9-1.5 3.6-3.1 4.8-5.2c1.5-1.3 2.1-3 2.7-4.7" />
+</svg> Live Multiplayer</h4>
+          <p>Real-time 16-player races with skill-based global matchmaking.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-visual reveal">
+      <div class="engine-badge">
+        <div class="engine-logo">UNREAL ENGINE 5</div>
+        <div class="engine-sub">Powered By Epic Games Technology</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-num">50+</div>
+          <div class="stat-label">Cars</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">8</div>
+          <div class="stat-label">Districts</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">16v</div>
+          <div class="stat-label">Multiplayer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-sep"></div>
+
+<!-- PRE-REGISTER -->
+<section id="preregister">
+  <div class="prereg-glow"></div>
+  <div class="prereg-content">
+    <div class="section-tag reveal">// Coming Soon</div>
+    <h2 class="section-title reveal">PRE-REGISTER<br><span style="color:var(--p1)">& GET REWARDS</span></h2>
+    <div class="section-line reveal" style="margin:20px auto 40px;"></div>
+    <p class="reveal">
+      Be among the first to hit the streets. Pre-register now and unlock exclusive launch rewards — rare cars, in-game currency, and founder's badges.
+    </p>
+
+    <div class="countdown reveal">
+      <div class="count-box">
+        <span class="count-num" id="days">00</span>
+        <span class="count-label">Days</span>
+      </div>
+      <div class="count-box">
+        <span class="count-num" id="hours">00</span>
+        <span class="count-label">Hours</span>
+      </div>
+      <div class="count-box">
+        <span class="count-num" id="minutes">00</span>
+        <span class="count-label">Mins</span>
+      </div>
+      <div class="count-box">
+        <span class="count-num" id="seconds">00</span>
+        <span class="count-label">Secs</span>
+      </div>
+    </div>
+
+    <a href="https://play.google.com/store" target="_blank" class="gplay-btn reveal">
+      <span class="gplay-icon"><svg xmlns="http://www.w3.org/2000/svg" width="21.72" height="24" viewBox="0 0 256 283">
+	<rect width="256" height="283" fill="none" />
+	<path fill="#ea4335" d="M119.553 134.916L1.06 259.061a32.14 32.14 0 0 0 47.062 19.071l133.327-75.934z" />
+	<path fill="#fbbc04" d="M239.37 113.814L181.715 80.79l-64.898 56.95l65.162 64.28l57.216-32.67a31.345 31.345 0 0 0 0-55.537z" />
+	<path fill="#4285f4" d="M1.06 23.487A30.6 30.6 0 0 0 0 31.61v219.327a32.3 32.3 0 0 0 1.06 8.124l122.555-120.966z" />
+	<path fill="#34a853" d="m120.436 141.274l61.278-60.483L48.564 4.503A32.85 32.85 0 0 0 32.051 0C17.644-.028 4.978 9.534 1.06 23.399z" />
+</svg></span>
+      <div class="gplay-inner">
+        <small>Pre-Register on</small>
+        <big>Google Play</big>
+      </div>
+    </a>
+    <p class="prereg-note reveal">Available on Android · iOS Coming Soon</p>
+  </div>
+</section>
+
+<div class="neon-sep"></div>
+
+<!-- DEVELOPER -->
+<section id="developer">
+  <div class="section-tag reveal">// The Team</div>
+  <h2 class="section-title reveal">MEET THE<br><span style="color:var(--p1)">DEVELOPER</span></h2>
+  <div class="section-line reveal"></div>
+
+  <div class="dev-grid">
+    <div class="dev-card reveal">
+      <div class="dev-avatar">
+  <img src="Rohit.Img.jpeg alt="Rohit Kushwaha">
+</div>
+      <div class="dev-name">Rohit Kushwaha (Void)</div>
+      <div class="dev-role">Independent Game Developer</div>
+      <div class="dev-bio">
+        A passionate indie game developer obsessed with creating high-fidelity mobile racing experiences. We believe mobile gaming deserves console-quality — no compromises, no shortcuts.
+      </div>
+      <div class="dev-socials">
+        <a href="https://twitter.com/RohitGamedev" class="social-link" target="_blank">
+<span>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16">
+	<rect width="16" height="16" fill="none" />
+	<path fill="#fdfdfd" d="m9.237 7.004l4.84-5.505H12.93L8.727 6.28L5.371 1.5H1.5l5.075 7.228L1.5 14.499h1.147l4.437-5.047l3.545 5.047H14.5zM7.666 8.791l-.514-.72L3.06 2.344h1.762l3.302 4.622l.514.72l4.292 6.007h-1.761z" />
+</svg>
+</span>
+Twitter / X
+</a>
+
+<a href="https://www.instagram.com/voidbuilds/" class="social-link" target="_blank">
+<span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256">
+	<rect width="256" height="256" fill="none" />
+	<g fill="none">
+		<rect width="256" height="256" fill="url(#SVGKdMMobCR)" rx="60" />
+		<rect width="256" height="256" fill="url(#SVGqYUiQbXV)" rx="60" />
+		<path fill="#fff" d="M128.009 28c-27.158 0-30.567.119-41.233.604c-10.646.488-17.913 2.173-24.271 4.646c-6.578 2.554-12.157 5.971-17.715 11.531c-5.563 5.559-8.98 11.138-11.542 17.713c-2.48 6.36-4.167 13.63-4.646 24.271c-.477 10.667-.602 14.077-.602 41.236s.12 30.557.604 41.223c.49 10.646 2.175 17.913 4.646 24.271c2.556 6.578 5.973 12.157 11.533 17.715c5.557 5.563 11.136 8.988 17.709 11.542c6.363 2.473 13.631 4.158 24.275 4.646c10.667.485 14.073.604 41.23.604c27.161 0 30.559-.119 41.225-.604c10.646-.488 17.921-2.173 24.284-4.646c6.575-2.554 12.146-5.979 17.702-11.542c5.563-5.558 8.979-11.137 11.542-17.712c2.458-6.361 4.146-13.63 4.646-24.272c.479-10.666.604-14.066.604-41.225s-.125-30.567-.604-41.234c-.5-10.646-2.188-17.912-4.646-24.27c-2.563-6.578-5.979-12.157-11.542-17.716c-5.562-5.562-11.125-8.979-17.708-11.53c-6.375-2.474-13.646-4.16-24.292-4.647c-10.667-.485-14.063-.604-41.23-.604zm-8.971 18.021c2.663-.004 5.634 0 8.971 0c26.701 0 29.865.096 40.409.575c9.75.446 15.042 2.075 18.567 3.444c4.667 1.812 7.994 3.979 11.492 7.48c3.5 3.5 5.666 6.833 7.483 11.5c1.369 3.52 3 8.812 3.444 18.562c.479 10.542.583 13.708.583 40.396s-.104 29.855-.583 40.396c-.446 9.75-2.075 15.042-3.444 18.563c-1.812 4.667-3.983 7.99-7.483 11.488c-3.5 3.5-6.823 5.666-11.492 7.479c-3.521 1.375-8.817 3-18.567 3.446c-10.542.479-13.708.583-40.409.583c-26.702 0-29.867-.104-40.408-.583c-9.75-.45-15.042-2.079-18.57-3.448c-4.666-1.813-8-3.979-11.5-7.479s-5.666-6.825-7.483-11.494c-1.369-3.521-3-8.813-3.444-18.563c-.479-10.542-.575-13.708-.575-40.413s.096-29.854.575-40.396c.446-9.75 2.075-15.042 3.444-18.567c1.813-4.667 3.983-8 7.484-11.5s6.833-5.667 11.5-7.483c3.525-1.375 8.819-3 18.569-3.448c9.225-.417 12.8-.542 31.437-.563zm62.351 16.604c-6.625 0-12 5.37-12 11.996c0 6.625 5.375 12 12 12s12-5.375 12-12s-5.375-12-12-12zm-53.38 14.021c-28.36 0-51.354 22.994-51.354 51.355s22.994 51.344 51.354 51.344c28.361 0 51.347-22.983 51.347-51.344c0-28.36-22.988-51.355-51.349-51.355zm0 18.021c18.409 0 33.334 14.923 33.334 33.334c0 18.409-14.925 33.334-33.334 33.334s-33.333-14.925-33.333-33.334c0-18.411 14.923-33.334 33.333-33.334" />
+		<defs>
+			<radialGradient id="SVGKdMMobCR" cx="0" cy="0" r="1" gradientTransform="matrix(0 -253.715 235.975 0 68 275.717)" gradientUnits="userSpaceOnUse">
+				<stop stop-color="#fd5" />
+				<stop offset=".1" stop-color="#fd5" />
+				<stop offset=".5" stop-color="#ff543e" />
+				<stop offset="1" stop-color="#c837ab" />
+			</radialGradient>
+			<radialGradient id="SVGqYUiQbXV" cx="0" cy="0" r="1" gradientTransform="rotate(78.68 -32.69 -16.937)scale(113.412 467.488)" gradientUnits="userSpaceOnUse">
+				<stop stop-color="#3771c8" />
+				<stop offset=".128" stop-color="#3771c8" />
+				<stop offset="1" stop-color="#60f" stop-opacity="0" />
+			</radialGradient>
+		</defs>
+	</g>
+</svg></span> Instagram
+</a>
+
+<a href="https://www.youtube.com/@VoidGameDeveloper" class="social-link" target="_blank">
+<span><svg xmlns="http://www.w3.org/2000/svg" width="34.14" height="24" viewBox="0 0 256 180">
+	<rect width="256" height="180" fill="none" />
+	<path fill="#f00" d="M250.346 28.075A32.18 32.18 0 0 0 227.69 5.418C207.824 0 127.87 0 127.87 0S47.912.164 28.046 5.582A32.18 32.18 0 0 0 5.39 28.24c-6.009 35.298-8.34 89.084.165 122.97a32.18 32.18 0 0 0 22.656 22.657c19.866 5.418 99.822 5.418 99.822 5.418s79.955 0 99.82-5.418a32.18 32.18 0 0 0 22.657-22.657c6.338-35.348 8.291-89.1-.164-123.134" />
+	<path fill="#fff" d="m102.421 128.06l66.328-38.418l-66.328-38.418z" />
+</svg></span> YouTube
+</a>
+
+<a href="https://discord.gg/6hrdZuH6" class="social-link" target="_blank">
+<span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256">
+	<rect width="256" height="256" fill="none" />
+	<g fill="none">
+		<rect width="256" height="256" fill="#5865f2" rx="60" />
+		<g clip-path="url(#SVGKXSAsd8x)">
+			<path fill="#fff" d="M197.308 64.797a165 165 0 0 0-40.709-12.627a.62.62 0 0 0-.654.31c-1.758 3.126-3.706 7.206-5.069 10.412c-15.373-2.302-30.666-2.302-45.723 0c-1.364-3.278-3.382-7.286-5.148-10.412a.64.64 0 0 0-.655-.31a164.5 164.5 0 0 0-40.709 12.627a.6.6 0 0 0-.268.23c-25.928 38.736-33.03 76.52-29.546 113.836a.7.7 0 0 0 .26.468c17.106 12.563 33.677 20.19 49.94 25.245a.65.65 0 0 0 .702-.23c3.847-5.254 7.276-10.793 10.217-16.618a.633.633 0 0 0-.347-.881c-5.44-2.064-10.619-4.579-15.601-7.436a.642.642 0 0 1-.063-1.064a86 86 0 0 0 3.098-2.428a.62.62 0 0 1 .646-.088c32.732 14.944 68.167 14.944 100.512 0a.62.62 0 0 1 .655.08a80 80 0 0 0 3.106 2.436a.642.642 0 0 1-.055 1.064a102.6 102.6 0 0 1-15.609 7.428a.64.64 0 0 0-.339.889a133 133 0 0 0 10.208 16.61a.64.64 0 0 0 .702.238c16.342-5.055 32.913-12.682 50.02-25.245a.65.65 0 0 0 .26-.46c4.17-43.141-6.985-80.616-29.571-113.836a.5.5 0 0 0-.26-.238M94.834 156.142c-9.855 0-17.975-9.047-17.975-20.158s7.963-20.158 17.975-20.158c10.09 0 18.131 9.127 17.973 20.158c0 11.111-7.962 20.158-17.973 20.158m66.456 0c-9.855 0-17.974-9.047-17.974-20.158s7.962-20.158 17.974-20.158c10.09 0 18.131 9.127 17.974 20.158c0 11.111-7.884 20.158-17.974 20.158" />
+		</g>
+		<defs>
+			<clipPath id="SVGKXSAsd8x">
+				<path fill="#fff" d="M28 51h200v154.93H28z" />
+			</clipPath>
+		</defs>
+	</g>
+</svg></span> Discord
+</a>
+
+<a href="https://www.linkedin.com/in/rohit-kumar-67ab01319" class="social-link" target="_blank">
+<span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256">
+	<rect width="256" height="256" fill="none" />
+	<g fill="none">
+		<rect width="256" height="256" fill="#0a66c2" rx="60" />
+		<path fill="#fff" d="M184.715 217.685h29.27a4 4 0 0 0 4-3.999l.015-61.842c0-32.323-6.965-57.168-44.738-57.168c-14.359-.534-27.9 6.868-35.207 19.228a.32.32 0 0 1-.595-.161V101.66a4 4 0 0 0-4-4h-27.777a4 4 0 0 0-4 4v112.02a4 4 0 0 0 4 4h29.268a4 4 0 0 0 4-4v-55.373c0-15.657 2.97-30.82 22.381-30.82c19.135 0 19.383 17.916 19.383 31.834v54.364a4 4 0 0 0 4 4M38 59.628c0 11.864 9.767 21.626 21.632 21.626c11.862-.001 21.623-9.769 21.623-21.631C81.253 47.761 71.491 38 59.628 38C47.762 38 38 47.763 38 59.627m6.959 158.058h29.307a4 4 0 0 0 4-4V101.66a4 4 0 0 0-4-4H44.959a4 4 0 0 0-4 4v112.025a4 4 0 0 0 4 4" />
+	</g>
+</svg></span> LinkedIn
+</a>
+
+    <div class="dev-tech reveal">
+      <h3>Technology Stack</h3>
+      <div class="tech-item">
+        <div>
+          <div>Game Engine</div>
+          <div class="tech-bar"><div class="tech-bar-fill" data-width="100"></div></div>
+        </div>
+        <div class="tech-value">Unreal Engine 5</div>
+      </div>
+      <div class="tech-item">
+        <div>
+          <div>Programming</div>
+          <div class="tech-bar"><div class="tech-bar-fill" data-width="90"></div></div>
+        </div>
+        <div class="tech-value">C++ / Blueprints</div>
+      </div>
+      <div class="tech-item">
+        <div>
+          <div>Rendering</div>
+          <div class="tech-bar"><div class="tech-bar-fill" data-width="95"></div></div>
+        </div>
+        <div class="tech-value">Nanite + Lumen</div>
+      </div>
+      <div class="tech-item">
+        <div>
+          <div>Physics</div>
+          <div class="tech-bar"><div class="tech-bar-fill" data-width="88"></div></div>
+        </div>
+        <div class="tech-value">Chaos Vehicle Physics</div>
+      </div>
+      <div class="tech-item">
+        <div>
+          <div>Backend</div>
+          <div class="tech-bar"><div class="tech-bar-fill" data-width="80"></div></div>
+        </div>
+        <div class="tech-value">Epic Online Services</div>
+      </div>
+      <div class="tech-item">
+        <div>
+          <div>Platform</div>
+          <div class="tech-bar"><div class="tech-bar-fill" data-width="100"></div></div>
+        </div>
+        <div class="tech-value">Android (iOS Soon)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-sep"></div>
+
+<!-- SUPPORT -->
+<section id="support">
+  <div class="section-tag reveal">// We've Got You</div>
+  <h2 class="section-title reveal">SUPPORT<br><span style="color:var(--p1)">CENTER</span></h2>
+  <div class="section-line reveal"></div>
+
+  <div class="support-grid">
+    <div class="support-card reveal">
+      <span class="support-icon">🐛</span>
+      <h3>Report a Bug</h3>
+      <p>Found something broken? Our team reviews every report. Help us build a better game.</p>
+      <a href="mailto:StreetHorizon@gmail.com">Submit Bug Report →</a>
+    </div>
+    <div class="support-card reveal">
+      <span class="support-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256">
+	<rect width="256" height="256" fill="none" />
+	<g fill="none">
+		<rect width="256" height="256" fill="#5865f2" rx="60" />
+		<g clip-path="url(#SVGKXSAsd8x)">
+			<path fill="#fff" d="M197.308 64.797a165 165 0 0 0-40.709-12.627a.62.62 0 0 0-.654.31c-1.758 3.126-3.706 7.206-5.069 10.412c-15.373-2.302-30.666-2.302-45.723 0c-1.364-3.278-3.382-7.286-5.148-10.412a.64.64 0 0 0-.655-.31a164.5 164.5 0 0 0-40.709 12.627a.6.6 0 0 0-.268.23c-25.928 38.736-33.03 76.52-29.546 113.836a.7.7 0 0 0 .26.468c17.106 12.563 33.677 20.19 49.94 25.245a.65.65 0 0 0 .702-.23c3.847-5.254 7.276-10.793 10.217-16.618a.633.633 0 0 0-.347-.881c-5.44-2.064-10.619-4.579-15.601-7.436a.642.642 0 0 1-.063-1.064a86 86 0 0 0 3.098-2.428a.62.62 0 0 1 .646-.088c32.732 14.944 68.167 14.944 100.512 0a.62.62 0 0 1 .655.08a80 80 0 0 0 3.106 2.436a.642.642 0 0 1-.055 1.064a102.6 102.6 0 0 1-15.609 7.428a.64.64 0 0 0-.339.889a133 133 0 0 0 10.208 16.61a.64.64 0 0 0 .702.238c16.342-5.055 32.913-12.682 50.02-25.245a.65.65 0 0 0 .26-.46c4.17-43.141-6.985-80.616-29.571-113.836a.5.5 0 0 0-.26-.238M94.834 156.142c-9.855 0-17.975-9.047-17.975-20.158s7.963-20.158 17.975-20.158c10.09 0 18.131 9.127 17.973 20.158c0 11.111-7.962 20.158-17.973 20.158m66.456 0c-9.855 0-17.974-9.047-17.974-20.158s7.962-20.158 17.974-20.158c10.09 0 18.131 9.127 17.974 20.158c0 11.111-7.884 20.158-17.974 20.158" />
+		</g>
+		<defs>
+			<clipPath id="SVGKXSAsd8x">
+				<path fill="#fff" d="M28 51h200v154.93H28z" />
+			</clipPath>
+		</defs>
+	</g>
+</svg></span>
+      <h3>Community Discord</h3>
+      <p>Join thousands of players, get live help from the community, and talk directly with devs.</p>
+      <a href="#">Join Discord →</a>
+    </div>
+    <div class="support-card reveal">
+      <span class="support-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+	<rect width="24" height="24" fill="none" />
+	<g fill="none">
+		<path fill="#fff" d="M23.249 3.82H.75v16.36h22.5z" />
+		<path fill="#bbd8ff" d="M20.999 18.136H3.001L.751 20.18H23.25z" />
+		<path stroke="#092f63" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M23.249 3.82L12 15.374L.751 3.819m0 16.362l8.283-7.67m5.932 0l8.283 7.67" stroke-width="1" />
+		<path stroke="#092f63" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M23.249 3.82H.75v16.36h22.5z" stroke-width="1" />
+	</g>
+</svg></span>
+      <h3>Email Support</h3>
+      <p>For account issues, payment problems, or anything else — we respond within 24 hours.</p>
+      <a href="mailto:StreetHorizon@gmail.com">Email Us →</a>
+    </div>
+    <div class="support-card reveal">
+      <span class="support-icon">📖</span>
+      <h3>FAQ & Help Docs</h3>
+      <p>Browse our growing knowledge base for quick answers to the most common questions.</p>
+      <a href="#">Browse FAQ →</a>
+    </div>
+    <div class="support-card reveal">
+      <span class="support-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 128 128">
+	<rect width="128" height="128" fill="none" />
+	<path fill="#e2a610" d="M53.32 18.8c0-7.09 5.77-12.86 12.86-12.86s12.86 5.77 12.86 12.86s-5.77 12.86-12.86 12.86S53.32 25.9 53.32 18.8m7.48 0c0 2.97 2.41 5.38 5.38 5.38s5.38-2.41 5.38-5.38s-2.41-5.38-5.38-5.38s-5.38 2.42-5.38 5.38" />
+	<path fill="#9e740b" d="M77.24 12.28s.57 2.27-2.06 3.51c-2.63 1.23-4.37.32-4.37.32c.47.8.75 1.71.75 2.7c0 2.97-2.41 5.38-5.38 5.38s-5.38-2.41-5.38-5.38c0-.3.07-1.43.55-2.37c-4.46 2.12-7.85.31-7.85.31c-.11.67-.18 1.36-.18 2.06c0 7.09 5.77 12.86 12.86 12.86S79.04 25.9 79.04 18.8c0-2.38-.66-4.61-1.8-6.52" />
+	<path fill="#ffca28" d="M10.46 97.8c6.77-6.65 10.99-8.89 12.71-18.53s.34-29.95 7.92-43.25C38.01 23.84 50.71 18.8 63.1 18.8c.3 0 .6.02.9.02c.3-.01.6-.02.9-.02c12.39 0 25.09 5.04 32.01 17.21c7.57 13.31 6.2 33.62 7.92 43.25c1.72 9.64 5.94 11.88 12.71 18.53c2.92 2.87 6.45 7.44 6.46 10.38s-1.49 4.01-5.06 5.51c-10.1 4.25-23.6 8.37-54.94 8.37s-44.84-4.12-54.94-8.37c-3.57-1.5-5.07-2.56-5.06-5.51c.01-2.93 3.54-7.5 6.46-10.37" />
+	<path fill="#4e342e" d="M113.7 108.38c0-4.43-22.25-8.02-49.7-8.02s-49.7 3.59-49.7 8.02s22.25 9.72 49.7 9.72s49.7-5.29 49.7-9.72" />
+	<path fill="#e2a610" d="M93.84 44.79c.37 1.41.68 2.82.93 4.2c1.27 7.06 1.04 14.3 1.61 21.45c.77 9.57 2.47 14.61 6.34 19.11c.51.59-.01 1.5-.78 1.38c-5.17-.79-9.32-1.58-14.05-4.7c-7.06-4.65-8.8-13.4-8.85-21.26c-.08-11.7.14-23.03-.79-27.33c-1.29-5.99-2.49-9.18-4.45-12.09c-2.99-4.44 8.62 1.72 10.44 3.09c5.07 3.83 7.98 9.99 9.6 16.15" />
+	<path fill="#fff59d" d="M30.89 60.32c-.12-7.58-.06-15.42 2.96-22.38c1.81-4.16 4.88-7.91 8.8-10.24c3.08-1.83 9.34-3.85 11.59.3c.45.83.63 1.8.66 2.75c.08 3.31-1.64 6.37-3.31 9.23c-4.94 8.48-6.91 17.75-9.52 27.15c-1.07 3.88-2.43 7.75-4.76 11.03c-1.6 2.25-10.51 10.25-8.47 3.02C30.8 74.19 31 67.6 30.89 60.32" />
+	<path fill="#e2a610" d="M73.09 106.82c-.01-1.72-.94-2.71-3.08-3.45c-4.44-1.53-10-1.25-13.24.49c-3.4 1.82-1.04 11.91 7.23 11.91s9.1-7.64 9.09-8.95" />
+	<path fill="#fff59d" d="M33.25 91.79c-8.78 1.54-15.14 4.87-17.89 7.57c-2.18 2.13-2.18 3.81 1.66 2.06c2.89-1.32 12.15-4 20.26-4.81c13.93-1.4 22.53-1.43 23.96-1.4c3.35.07 3.63-2.51-3.14-3.42c-6.77-.9-16.07-1.53-24.85 0m27.21 22.03c1.16.8 2.7 1.19 4 .65s2.14-2.19 1.5-3.44c-.25-.49-.68-.86-1.11-1.2c-1.19-.93-2.51-1.69-3.91-2.25c-.55-.22-1.13-.42-1.73-.38c-.59.03-1.21.34-1.44.89c-.99 2.25.99 4.57 2.69 5.73" />
+</svg></span>
+      <h3>Game Updates</h3>
+      <p>Stay up to date with patch notes, new features, and maintenance announcements.</p>
+      <a href="#">View Changelog →</a>
+    </div>
+    <div class="support-card reveal">
+      <span class="support-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26.25" height="24" viewBox="0 0 35 32">
+	<rect width="35" height="32" fill="none" />
+	<g fill="#ff0505">
+		<path d="M21.799 2.954C20.694 1.05 19.19 0 17.564 0s-3.131 1.05-4.236 2.954L1.059 24.087c-1.12 1.947-1.24 3.969-.33 5.546c.866 1.5 2.565 2.363 4.664 2.367h24.342c2.102-.004 3.804-.864 4.667-2.361c.905-1.567.783-3.581-.335-5.525zm11.738 26.185c-.681 1.18-2.067 1.858-3.804 1.861H5.394c-1.731-.003-3.115-.684-3.799-1.867c-.727-1.26-.606-2.917.33-4.546L14.193 3.456C15.112 1.872 16.309 1 17.564 1s2.452.872 3.37 2.456l12.268 21.157c.935 1.626 1.057 3.276.335 4.526" />
+		<path d="M17.564 20a.5.5 0 0 0 .5-.5v-10a.5.5 0 0 0-1 0v10a.5.5 0 0 0 .5.5m-.064 2.5c-1.103 0-2 .897-2 2s.897 2 2 2s2-.897 2-2s-.897-2-2-2m0 3a1.001 1.001 0 0 1 0-2a1.001 1.001 0 0 1 0 2" />
+	</g>
+</svg></span>
+      <h3>Report Player</h3>
+      <p>Help us keep the races fair. Report cheaters, toxic players, and misconduct.</p>
+      <a href="mailto:ContactStreetHorizon@gmail.com">Report Now →</a>
+    </div>
+  </div>
+</section>
+
+<div class="neon-sep"></div>
+
+<!-- PRIVACY POLICY -->
+<section id="privacy" class="legal-section">
+  <div class="section-tag reveal">// Legal</div>
+  <h2 class="section-title reveal">PRIVACY<br><span style="color:var(--p1)">POLICY</span></h2>
+  <div class="section-line reveal"></div>
+  <p class="legal-updated reveal">Last updated: January 1, 2025</p>
+
+  <div class="legal-content reveal">
+    <h3>1. Information We Collect</h3>
+    <p>StreetHorizon Studio ("we", "us", "our") collects information to provide and improve the game. We may collect:</p>
+    <ul>
+      <li>Device identifiers and hardware information</li>
+      <li>Gameplay data, statistics, and session duration</li>
+      <li>In-app purchase history (processed securely via Google Play)</li>
+      <li>Crash reports and performance diagnostics</li>
+      <li>Voluntarily provided account data (username, email)</li>
+    </ul>
+
+    <h3>2. How We Use Your Information</h3>
+    <p>We use collected data exclusively to:</p>
+    <ul>
+      <li>Operate, maintain, and improve StreetHorizon</li>
+      <li>Provide multiplayer matchmaking and leaderboards</li>
+      <li>Detect and prevent cheating or fraudulent activity</li>
+      <li>Send optional game updates and announcements</li>
+      <li>Comply with legal obligations</li>
+    </ul>
+
+    <h3>3. Data Sharing</h3>
+    <p>We do not sell your personal data. We may share anonymized, aggregated analytics with third-party services (e.g., Unreal Engine analytics, crash reporting). Any third-party integrations are bound by their own privacy policies.</p>
+
+    <h3>4. Children's Privacy</h3>
+    <p>StreetHorizon is rated for users 13 and above. We do not knowingly collect personal information from children under 13. If you believe a child has provided us data, contact us immediately at privacy@streethorizongame.com.</p>
+
+    <h3>5. Data Security</h3>
+    <p>We implement industry-standard security measures including encryption in transit (TLS 1.3) and at rest. However, no method of electronic transmission is 100% secure.</p>
+
+    <h3>6. Your Rights</h3>
+    <p>You may request access to, correction of, or deletion of your personal data at any time by contacting us at privacy@streethorizongame.com. We will respond within 30 days.</p>
+
+    <h3>7. Changes to This Policy</h3>
+    <p>We may update this Privacy Policy periodically. Material changes will be communicated via in-game notification. Continued use of the game constitutes acceptance of the updated policy.</p>
+
+    <h3>8. Contact</h3>
+    <p>For privacy concerns: <a href="mailto:StreetHorizon@gmail.com.com" style="color:var(--p1)">mailto:ContactStreetHorizon@gmail.com</a></p>
+  </div>
+</section>
+
+<div class="neon-sep"></div>
+
+<!-- TERMS & CONDITIONS -->
+<section id="terms" class="legal-section" style="background:var(--dark)">
+  <div class="section-tag reveal">// Legal</div>
+  <h2 class="section-title reveal">TERMS &<br><span style="color:var(--p1)">CONDITIONS</span></h2>
+  <div class="section-line reveal"></div>
+  <p class="legal-updated reveal">Last updated: January 1, 2025</p>
+
+  <div class="legal-content reveal">
+    <h3>1. Acceptance of Terms</h3>
+    <p>By downloading, installing, or playing StreetHorizon, you agree to be bound by these Terms and Conditions. If you do not agree, do not use the game.</p>
+
+    <h3>2. License</h3>
+    <p>StreetHorizon Studio grants you a limited, non-exclusive, non-transferable, revocable license to install and play StreetHorizon for personal, non-commercial purposes. You may not:</p>
+    <ul>
+      <li>Copy, modify, or distribute the game or its assets</li>
+      <li>Reverse engineer, decompile, or disassemble the game</li>
+      <li>Use the game for commercial purposes without written permission</li>
+      <li>Remove any proprietary notices from the game</li>
+    </ul>
+
+    <h3>3. User Conduct</h3>
+    <p>While using StreetHorizon, you agree NOT to:</p>
+    <ul>
+      <li>Use cheats, exploits, hacks, bots, or unauthorized third-party software</li>
+      <li>Harass, threaten, or harm other players</li>
+      <li>Attempt to gain unauthorized access to game servers</li>
+      <li>Engage in any form of fraudulent activity</li>
+      <li>Share your account credentials with others</li>
+    </ul>
+
+    <h3>4. In-App Purchases</h3>
+    <p>StreetHorizon may offer in-app purchases. All purchases are final and non-refundable unless required by applicable law. Virtual currency and items have no real-world value and cannot be exchanged for cash.</p>
+
+    <h3>5. Intellectual Property</h3>
+    <p>All content in StreetHorizon — including but not limited to visuals, sounds, code, characters, and branding — is the exclusive property of StreetHorizon Studio or its licensors and is protected by copyright law.</p>
+
+    <h3>6. Disclaimer of Warranties</h3>
+    <p>The game is provided "as is" without warranty of any kind. We do not guarantee uninterrupted, error-free operation. We reserve the right to modify or discontinue the game at any time.</p>
+
+    <h3>7. Limitation of Liability</h3>
+    <p>To the fullest extent permitted by law, StreetHorizon Studio shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the game.</p>
+
+    <h3>8. Termination</h3>
+    <p>We reserve the right to suspend or terminate your access at any time, with or without notice, for violation of these Terms or any conduct we deem harmful to the game or its community.</p>
+
+    <h3>9. Governing Law</h3>
+    <p>These Terms shall be governed by the laws of India. Any disputes shall be resolved in the courts of [Your City], India.</p>
+
+    <h3>10. Contact</h3>
+    <p>For legal inquiries: <a href="mailto:StreetHorizon@gmail.com.com" style="color:var(--p1)">mailto:StreetHorizon@gmail.comm</a></p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <span class="nav-logo">StreetHorizon</span>
+      <p>The most immersive mobile street racing experience, built with Unreal Engine 5. Speed without limits.</p>
+      <div style="display:flex;gap:12px;margin-top:24px;">
+        <a href="#" style="color:var(--muted);text-decoration:none;font-size:22px;transition:color 0.3s" onmouseover="this.style.color='#6367FF'" onmouseout="this.style.color=''"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 128 128">
+	<rect width="128" height="128" fill="none" />
+	<path d="M75.916 54.2L122.542 0h-11.05L71.008 47.06L38.672 0H1.376l48.898 71.164L1.376 128h11.05L55.18 78.303L89.328 128h37.296L75.913 54.2ZM60.782 71.79l-4.955-7.086l-39.42-56.386h16.972L65.19 53.824l4.954 7.086l41.353 59.15h-16.97L60.782 71.793Z" />
+</svg></a>
+        <a href="#" style="color:var(--muted);text-decoration:none;font-size:22px;transition:color 0.3s" onmouseover="this.style.color='#6367FF'" onmouseout="this.style.color=''"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256">
+	<rect width="256" height="256" fill="none" />
+	<g fill="none">
+		<rect width="256" height="256" fill="url(#SVGKdMMobCR)" rx="60" />
+		<rect width="256" height="256" fill="url(#SVGqYUiQbXV)" rx="60" />
+		<path fill="#fff" d="M128.009 28c-27.158 0-30.567.119-41.233.604c-10.646.488-17.913 2.173-24.271 4.646c-6.578 2.554-12.157 5.971-17.715 11.531c-5.563 5.559-8.98 11.138-11.542 17.713c-2.48 6.36-4.167 13.63-4.646 24.271c-.477 10.667-.602 14.077-.602 41.236s.12 30.557.604 41.223c.49 10.646 2.175 17.913 4.646 24.271c2.556 6.578 5.973 12.157 11.533 17.715c5.557 5.563 11.136 8.988 17.709 11.542c6.363 2.473 13.631 4.158 24.275 4.646c10.667.485 14.073.604 41.23.604c27.161 0 30.559-.119 41.225-.604c10.646-.488 17.921-2.173 24.284-4.646c6.575-2.554 12.146-5.979 17.702-11.542c5.563-5.558 8.979-11.137 11.542-17.712c2.458-6.361 4.146-13.63 4.646-24.272c.479-10.666.604-14.066.604-41.225s-.125-30.567-.604-41.234c-.5-10.646-2.188-17.912-4.646-24.27c-2.563-6.578-5.979-12.157-11.542-17.716c-5.562-5.562-11.125-8.979-17.708-11.53c-6.375-2.474-13.646-4.16-24.292-4.647c-10.667-.485-14.063-.604-41.23-.604zm-8.971 18.021c2.663-.004 5.634 0 8.971 0c26.701 0 29.865.096 40.409.575c9.75.446 15.042 2.075 18.567 3.444c4.667 1.812 7.994 3.979 11.492 7.48c3.5 3.5 5.666 6.833 7.483 11.5c1.369 3.52 3 8.812 3.444 18.562c.479 10.542.583 13.708.583 40.396s-.104 29.855-.583 40.396c-.446 9.75-2.075 15.042-3.444 18.563c-1.812 4.667-3.983 7.99-7.483 11.488c-3.5 3.5-6.823 5.666-11.492 7.479c-3.521 1.375-8.817 3-18.567 3.446c-10.542.479-13.708.583-40.409.583c-26.702 0-29.867-.104-40.408-.583c-9.75-.45-15.042-2.079-18.57-3.448c-4.666-1.813-8-3.979-11.5-7.479s-5.666-6.825-7.483-11.494c-1.369-3.521-3-8.813-3.444-18.563c-.479-10.542-.575-13.708-.575-40.413s.096-29.854.575-40.396c.446-9.75 2.075-15.042 3.444-18.567c1.813-4.667 3.983-8 7.484-11.5s6.833-5.667 11.5-7.483c3.525-1.375 8.819-3 18.569-3.448c9.225-.417 12.8-.542 31.437-.563zm62.351 16.604c-6.625 0-12 5.37-12 11.996c0 6.625 5.375 12 12 12s12-5.375 12-12s-5.375-12-12-12zm-53.38 14.021c-28.36 0-51.354 22.994-51.354 51.355s22.994 51.344 51.354 51.344c28.361 0 51.347-22.983 51.347-51.344c0-28.36-22.988-51.355-51.349-51.355zm0 18.021c18.409 0 33.334 14.923 33.334 33.334c0 18.409-14.925 33.334-33.334 33.334s-33.333-14.925-33.333-33.334c0-18.411 14.923-33.334 33.333-33.334" />
+		<defs>
+			<radialGradient id="SVGKdMMobCR" cx="0" cy="0" r="1" gradientTransform="matrix(0 -253.715 235.975 0 68 275.717)" gradientUnits="userSpaceOnUse">
+				<stop stop-color="#fd5" />
+				<stop offset=".1" stop-color="#fd5" />
+				<stop offset=".5" stop-color="#ff543e" />
+				<stop offset="1" stop-color="#c837ab" />
+			</radialGradient>
+			<radialGradient id="SVGqYUiQbXV" cx="0" cy="0" r="1" gradientTransform="rotate(78.68 -32.69 -16.937)scale(113.412 467.488)" gradientUnits="userSpaceOnUse">
+				<stop stop-color="#3771c8" />
+				<stop offset=".128" stop-color="#3771c8" />
+				<stop offset="1" stop-color="#60f" stop-opacity="0" />
+			</radialGradient>
+		</defs>
+	</g>
+</svg></a>
+        <a href="#" style="color:var(--muted);text-decoration:none;font-size:22px;transition:color 0.3s" onmouseover="this.style.color='#6367FF'" onmouseout="this.style.color=''"><svg xmlns="http://www.w3.org/2000/svg" width="34.14" height="24" viewBox="0 0 256 180">
+	<rect width="256" height="180" fill="none" />
+	<path fill="#f00" d="M250.346 28.075A32.18 32.18 0 0 0 227.69 5.418C207.824 0 127.87 0 127.87 0S47.912.164 28.046 5.582A32.18 32.18 0 0 0 5.39 28.24c-6.009 35.298-8.34 89.084.165 122.97a32.18 32.18 0 0 0 22.656 22.657c19.866 5.418 99.822 5.418 99.822 5.418s79.955 0 99.82-5.418a32.18 32.18 0 0 0 22.657-22.657c6.338-35.348 8.291-89.1-.164-123.134" />
+	<path fill="#fff" d="m102.421 128.06l66.328-38.418l-66.328-38.418z" />
+</svg></a>
+        <a href="#" style="color:var(--muted);text-decoration:none;font-size:22px;transition:color 0.3s" onmouseover="this.style.color='#6367FF'" onmouseout="this.style.color=''"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
+	<rect width="32" height="32" fill="none" />
+	<path fill="#42a5f5" d="M28 6H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h24a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2m0 6l-12 6l-12-6V8l12 6l12-6Z" />
+</svg></a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Navigate</h4>
+      <ul>
+        <li><a href="#home">Home</a></li>
+        <li><a href="#about">About Game</a></li>
+        <li><a href="#preregister">Pre-Register</a></li>
+        <li><a href="#developer">Developer</a></li>
+        <li><a href="#support">Support</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#privacy">Privacy Policy</a></li>
+        <li><a href="#terms">Terms & Conditions</a></li>
+        <li><a href="mailto:ContactStreetHorizon@gmail.com">Legal Contact</a></li>
+        <li><a href="mailto:ContactStreetHorizon@gmail.com">Contact Us</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 StreetHorizon Studio. All rights reserved. Built with Unreal Engine 5.</p>
+    <p style="color:var(--p1);font-size:12px;letter-spacing:2px;">SPEED WITHOUT LIMITS</p>
+  </div>
+</footer>
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.transform = `translate(${mx - 6}px, ${my - 6}px)`;
+  });
+  function animateRing() {
+    rx += (mx - rx - 18) * 0.12;
+    ry += (my - ry - 18) * 0.12;
+    ring.style.transform = `translate(${rx}px, ${ry}px)`;
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  // NAV SCROLL
+  const nav = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  // HAMBURGER
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => {
+    mobileMenu.classList.toggle('open');
+  });
+  function closeMobile() { mobileMenu.classList.remove('open'); }
+
+  // COUNTDOWN (target: 90 days from now)
+  const target = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  function updateCountdown() {
+    const now = new Date();
+    const diff = target - now;
+    if (diff <= 0) return;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('days').textContent = String(d).padStart(2,'0');
+    document.getElementById('hours').textContent = String(h).padStart(2,'0');
+    document.getElementById('minutes').textContent = String(m).padStart(2,'0');
+    document.getElementById('seconds').textContent = String(s).padStart(2,'0');
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  // SCROLL REVEAL
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // TECH BARS animate on visible
+  const techBars = document.querySelectorAll('.tech-bar-fill');
+  const barObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.width = entry.target.dataset.width + '%';
+        barObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  techBars.forEach(bar => barObserver.observe(bar));
+
+  // Active nav link highlight on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(sec => {
+      if (window.scrollY >= sec.offsetTop - 100) current = sec.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current ? '#fff' : '';
+    });
+  });
+</script>
+</body>
+</html>
